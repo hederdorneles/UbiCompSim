@@ -1,4 +1,4 @@
-package br.ic.uff.tempo.client;
+package br.uff.tempo.client;
 
 public class Action {
 
