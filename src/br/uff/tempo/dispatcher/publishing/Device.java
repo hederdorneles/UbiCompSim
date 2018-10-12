@@ -1,4 +1,4 @@
-package br.ic.uff.tempo.dispatcher.publishing;
+package br.uff.tempo.dispatcher.publishing;
 
 import java.util.ArrayList;
 import java.util.Iterator;
