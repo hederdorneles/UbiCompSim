@@ -1,4 +1,4 @@
-package br.uff.tempo.dispatcher;
+package br.ic.uff.tempo.dispatcher.publishing;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -8,7 +8,7 @@ public class Ambient {
 	private int id = 0;
 	private String description = new String();
 	private ArrayList<Device> devices = new ArrayList<Device>();
-	
+
 	public int getId() {
 		return id;
 	}
@@ -45,6 +45,24 @@ public class Ambient {
 			}
 		}
 		return null;
+	}
+
+	public void printDeviceList() {
+		int counter = 0;
+		for (Iterator<Device> iterator = this.devices.iterator(); iterator.hasNext();) {
+			counter++;
+			Device ts = iterator.next();
+			System.out.println("DEVICE: " + counter);
+			System.out.println("--------------------------------------------------");
+			System.out.println("ID: " + ts.getId());
+			System.out.println("DESCRIPTION: " + ts.getDescription());
+			for (Iterator<Functionality> iteratorF = ts.getFunctionalities().iterator(); iteratorF.hasNext();) {
+				Functionality tf = iteratorF.next();
+				System.out.print("---------> ");
+				System.out.println(tf.getDescription() + " - " + tf.getValue());
+			}
+			System.out.println(" ");
+		}
 	}
 
 }
