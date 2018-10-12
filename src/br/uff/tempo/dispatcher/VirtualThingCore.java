@@ -1,4 +1,5 @@
 package br.uff.tempo.dispatcher;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -72,9 +73,9 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 	}
 
 	/*
-	 * Esta função está setada para funcionar apenas com um ambiente (room) É
+	 * Esta funÃ§Ã£o estÃ¡ setada para funcionar apenas com um ambiente (room) Ã‰
 	 * preciso pensar em um jeito para que o ambiente de um dispositivo seja
-	 * encontrado. Até lá deixarei assim.
+	 * encontrado. AtÃ© lÃ¡ deixarei assim.
 	 */
 	private void messageTreatment(Message message) {
 		String data = (String) Serialization.fromJavaByteStream(message.getContent());
