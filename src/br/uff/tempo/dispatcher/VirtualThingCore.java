@@ -14,9 +14,9 @@ import javax.xml.parsers.SAXParserFactory;
 import org.hamcrest.core.IsNull;
 import org.xml.sax.SAXException;
 
-import dispatcher.publishing.Ambient;
-import dispatcher.publishing.Device;
-import dispatcher.publishing.Functionality;
+import br.uff.tempo.dispatcher.publishing.Ambient;
+import br.uff.tempo.dispatcher.publishing.Device;
+import br.uff.tempo.dispatcher.publishing.Functionality;
 import lac.cnclib.sddl.message.ApplicationMessage;
 import lac.cnclib.sddl.serialization.Serialization;
 import lac.cnet.sddl.objects.ApplicationObject;
