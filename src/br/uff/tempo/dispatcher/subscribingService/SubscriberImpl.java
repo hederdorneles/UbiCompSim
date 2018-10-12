@@ -1,4 +1,4 @@
-package br.ic.uff.tempo.dispatcher.subscribingService;
+package br.uff.tempo.dispatcher.subscribingService;
 
 public class SubscriberImpl extends Subscriber {
 
