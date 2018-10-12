@@ -3,7 +3,7 @@ package br.uff.tempo.dispatcher.subscribingService;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import br.ic.uff.tempo.dispatcher.publishing.Message;
+import br.uff.tempo.dispatcher.publishing.Message;
 
 
 //This class has to have a thread to deal with requisitions from CPS
