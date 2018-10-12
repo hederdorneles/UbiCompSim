@@ -1,4 +1,4 @@
-package br.uff.tempo.client;
+package br.ic.uff.tempo.client;
 
 import java.util.Random;
 
@@ -9,27 +9,30 @@ public class Cycle implements Runnable {
 	public void run() {
 		while (true) {
 			this.sendData();
-			// System.out.println("-> Perform an action.");
+			this.sleep(1000);
+			this.nextAction();
 		}
 	}
 
 	private void sendData() {
 		Random rand = new Random();
-		Integer n = rand.nextInt(50) + 1;
-		this.client.sendMessage(this.prepareToSend("Temperature", n.toString()));
+		Integer n1 = rand.nextInt(50) + 1;
+		Integer n2 = rand.nextInt(2);
+		Integer n3 = rand.nextInt(100) + 1;
+		String message = "temperature;" + n1 + ";lights;" + n2 + ";luminosity;" + n3 + ";";
+		this.client.sendMessage(message);
 	}
 
-	private String prepareToSend(String description, String value) {
-		value = "fffe" + int2hex(description.length()) + description + int2hex(value.length())
-				+ value;
-		return value;
-	}
-
-	private String int2hex(int v) {
-		String stringOne = Integer.toHexString(v);
-		if (v < 16) {
-			stringOne = "0" + stringOne;
+	private void sleep(int miliseconds) {
+		try {
+			Thread.sleep(miliseconds);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		return stringOne;
+	}
+	
+	private void nextAction(){
+		
 	}
 }
