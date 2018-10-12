@@ -1,11 +1,13 @@
-package br.ic.uff.tempo.client;
+package br.uff.tempo.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.UUID;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -15,6 +17,7 @@ import lac.cnclib.net.mrudp.MrUdpNodeConnection;
 import lac.cnclib.sddl.message.ApplicationMessage;
 //import lac.cnclib.sddl.message.ClientLibProtocol.UUID;
 import lac.cnclib.sddl.message.Message;
+import lac.cnclib.sddl.serialization.Serialization;
 
 public class EmbeddedClient implements NodeConnectionListener {
 
@@ -23,8 +26,16 @@ public class EmbeddedClient implements NodeConnectionListener {
 	private MrUdpNodeConnection connection;
 	private UUID myUUID;
 	private boolean registered = false;
-	private ArrayList<Action> actions = new ArrayList<Action>(); 
-	
+
+	public boolean isRegistered() {
+		return registered;
+	}
+
+	public Queue<Action> getActions() {
+		return actions;
+	}
+
+	private Queue<Action> actions = new LinkedList<Action>();
 
 	public static void main(String[] args) {
 		Logger.getLogger("").setLevel(Level.OFF);
@@ -58,15 +69,22 @@ public class EmbeddedClient implements NodeConnectionListener {
 
 	@Override
 	public void newMessageReceived(NodeConnection remoteCon, Message message) {
-		Action action = new Action();
-		/* Colocar o processamento da mensagem no formato (function;device;command)
-		 * Em seguida, analisar se a mensagem que est� chegando � um aviso sobre o XML.
-		 * Caso seja, alterar o atributo registered para true.
-		 * Programar o envio de mensagens para o core somente se estiver registrado. */
-		System.out.println(message.getContentObject());
+		String msg = (String) Serialization.fromJavaByteStream(message.getContent());
+		if (message.getContentObject().equals("registered")) {
+			this.registered = true;
+			System.out.println("[ST]: This device is registered at STaaS!");
+		} else {
+			if (this.registered == true) {
+				Action action = new Action();
+				String info[] = msg.split(";");
+				action.setDevice(info[0]);
+				action.setFunction(info[1]);
+				action.setCommand(info[2]);
+				this.actions.add(action);
+				System.out.println("[ST]: This device received a new action!");
+			}
+		}
 	}
-
-	// other methods
 
 	public void sendMessage(String data) {
 		ApplicationMessage message = new ApplicationMessage();

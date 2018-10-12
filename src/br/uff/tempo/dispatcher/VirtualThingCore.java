@@ -1,8 +1,8 @@
-package br.uff.tempo.server;
-
+package br.uff.tempo.dispatcher;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -13,9 +13,9 @@ import javax.xml.parsers.SAXParserFactory;
 import org.hamcrest.core.IsNull;
 import org.xml.sax.SAXException;
 
-import br.ic.uff.tempo.dispatcher.publishing.Ambient;
-import br.ic.uff.tempo.dispatcher.publishing.Device;
-import br.ic.uff.tempo.dispatcher.publishing.Functionality;
+import dispatcher.publishing.Ambient;
+import dispatcher.publishing.Device;
+import dispatcher.publishing.Functionality;
 import lac.cnclib.sddl.message.ApplicationMessage;
 import lac.cnclib.sddl.serialization.Serialization;
 import lac.cnet.sddl.objects.ApplicationObject;
@@ -24,9 +24,9 @@ import lac.cnet.sddl.objects.PrivateMessage;
 import lac.cnet.sddl.udi.core.SddlLayer;
 import lac.cnet.sddl.udi.core.UniversalDDSLayerFactory;
 import lac.cnet.sddl.udi.core.listener.UDIDataReaderListener;
-import br.ic.uff.tempo.xmlHandler.FileHandler;
+import xmlHandler.FileHandler;
 
-public class HelloCoreServer implements UDIDataReaderListener<ApplicationObject> {
+public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject> {
 	SddlLayer core;
 	int counter;
 	private ArrayList<Ambient> ambients = new ArrayList<Ambient>();
@@ -34,10 +34,10 @@ public class HelloCoreServer implements UDIDataReaderListener<ApplicationObject>
 
 	public static void main(String[] args) {
 		Logger.getLogger("").setLevel(Level.OFF);
-		new HelloCoreServer();
+		new VirtualThingCore();
 	}
 
-	public HelloCoreServer() {
+	public VirtualThingCore() {
 		core = UniversalDDSLayerFactory.getInstance();
 		core.createParticipant(UniversalDDSLayerFactory.CNET_DOMAIN);
 
@@ -68,17 +68,19 @@ public class HelloCoreServer implements UDIDataReaderListener<ApplicationObject>
 		Ambient amb = this.findAmbient("room");
 		if (amb != null)
 			amb.printDeviceList();
+		this.sendMessage(message.getSenderId(), message.getGatewayId(), "lights;Device1;turnOn");
 	}
 
 	/*
-	 * Esta fun√ß√£o est√° setada para funcionar apenas com um ambiente (room) √©
+	 * Esta funÁ„o est· setada para funcionar apenas com um ambiente (room) …
 	 * preciso pensar em um jeito para que o ambiente de um dispositivo seja
-	 * encontrado. At√° l√° deixarei assim.
+	 * encontrado. AtÈ l· deixarei assim.
 	 */
 	private void messageTreatment(Message message) {
 		String data = (String) Serialization.fromJavaByteStream(message.getContent());
 		if (data.equals("XML")) {
 			this.mountingDevice();
+			this.sendMessage(message.getSenderId(), message.getGatewayId(), "registered");
 		} else {
 			this.current = this.findAmbient("room");
 			if (this.current == null) {
@@ -110,7 +112,7 @@ public class HelloCoreServer implements UDIDataReaderListener<ApplicationObject>
 		try {
 			SAXParser saxParser = saxParserFactory.newSAXParser();
 			FileHandler handler = new FileHandler();
-			saxParser.parse(new File("/Pantoja/WORKSPACE/PANTOJACHANNEL/ardSCLAIM_CN_v001/src/client/config.xml"),
+			saxParser.parse(new File("/Pantoja/WORKSPACE/PANTOJACHANNEL/STaaS/src/client/config.xml"),
 					handler);
 			Ambient ambient = this.findAmbient(handler.getAmbient());
 			Device device = handler.getDevice();
@@ -135,4 +137,14 @@ public class HelloCoreServer implements UDIDataReaderListener<ApplicationObject>
 		return null;
 	}
 
+	public void sendMessage(UUID sender, UUID gateway, String command) {
+	    PrivateMessage privateMessage = new PrivateMessage();
+	    privateMessage.setGatewayId(gateway);
+	    privateMessage.setNodeId(sender);
+	    ApplicationMessage appMsg = new ApplicationMessage();
+	    appMsg.setContentObject(command);
+	    privateMessage.setMessage(Serialization.toProtocolMessage(appMsg));
+	    core.writeTopic(PrivateMessage.class.getSimpleName(), privateMessage);
+	}
+	
 }
