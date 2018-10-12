@@ -1,11 +1,21 @@
 package br.uff.tempo.server;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import br.uff.tempo.dispatcher.*;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
+import org.hamcrest.core.IsNull;
+import org.xml.sax.SAXException;
+
+import br.ic.uff.tempo.dispatcher.publishing.Ambient;
+import br.ic.uff.tempo.dispatcher.publishing.Device;
+import br.ic.uff.tempo.dispatcher.publishing.Functionality;
 import lac.cnclib.sddl.message.ApplicationMessage;
 import lac.cnclib.sddl.serialization.Serialization;
 import lac.cnet.sddl.objects.ApplicationObject;
@@ -14,15 +24,16 @@ import lac.cnet.sddl.objects.PrivateMessage;
 import lac.cnet.sddl.udi.core.SddlLayer;
 import lac.cnet.sddl.udi.core.UniversalDDSLayerFactory;
 import lac.cnet.sddl.udi.core.listener.UDIDataReaderListener;
+import br.ic.uff.tempo.xmlHandler.FileHandler;
 
 public class HelloCoreServer implements UDIDataReaderListener<ApplicationObject> {
 	SddlLayer core;
 	int counter;
-	private Ambient ambient = new Ambient();
+	private ArrayList<Ambient> ambients = new ArrayList<Ambient>();
+	private Ambient current = null;
 
 	public static void main(String[] args) {
 		Logger.getLogger("").setLevel(Level.OFF);
-
 		new HelloCoreServer();
 	}
 
@@ -54,104 +65,74 @@ public class HelloCoreServer implements UDIDataReaderListener<ApplicationObject>
 	public void onNewData(ApplicationObject topicSample) {
 		Message message = (Message) topicSample;
 		this.messageTreatment(message);
+		Ambient amb = this.findAmbient("room");
+		if (amb != null)
+			amb.printDeviceList();
+	}
+
+	/*
+	 * Esta função está setada para funcionar apenas com um ambiente (room) é
+	 * preciso pensar em um jeito para que o ambiente de um dispositivo seja
+	 * encontrado. Atá lá deixarei assim.
+	 */
+	private void messageTreatment(Message message) {
+		String data = (String) Serialization.fromJavaByteStream(message.getContent());
+		if (data.equals("XML")) {
+			this.mountingDevice();
+		} else {
+			this.current = this.findAmbient("room");
+			if (this.current == null) {
+				this.current = new Ambient();
+				System.out.println("[STaaS]: The Ambient is not Registered Yet!");
+			} else {
+				Device tempDevice = this.current.findDevice(message.getSenderId().toString());
+				if (tempDevice == null) 
+					System.out.println("[STaaS]: The Device is not Registered Yet!");				
+				else {
+					this.extractMessage(data, tempDevice);
+				}
+			}
+		}
+
+	}
+
+	private void extractMessage(String data, Device device) {
+		String functionalities[] = data.split(";");
+		for (int cont = 0; cont <= functionalities.length - 1; cont++) {
+			Functionality functionality = device.findFunctionality(functionalities[cont]);
+			functionality.setValue(Double.parseDouble(functionalities[cont + 1]));
+			cont++;
+		}		
 	}
 
 	private void mountingDevice() {
-		// It receives a XML.
-	}
-
-	private void messageTreatment(Message message) {
-		Device tempDevice = this.ambient.findDevice(message.getSenderId().toString());
-		if (tempDevice != null) {	
-			String data = (String) Serialization.fromJavaByteStream(message.getContent());
-			this.extractMessage(data.toCharArray(),tempDevice);
-		} else {
-			tempDevice = new Device();
-			tempDevice.setId(message.getSenderId().toString());
-			Functionality newFunctionality = new Functionality();
-			newFunctionality.setDescription("Temperature");
-			newFunctionality.setValue(0);
-			newFunctionality.setBusy(false);
-			tempDevice.getFunctionalities().add(newFunctionality);
-			this.ambient.getDevices().add(tempDevice);							
-			System.out.println("[STaaS]: The number of devices in this environment is " + this.ambient.getDevices().size());
-		}
-	}
-
-	private void extractMessage(char[] message, Device device) {
-		String description = "", value = "";
-		if (message[0] == 'f' && message[1] == 'f' && message[2] == 'f' && message[3] == 'e') {
-			for (int cont = 6; cont <= (this.hex2int(char2int(message[5]), char2int(message[4])) + 5); cont++) {
-				description += message[cont];
+		SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
+		try {
+			SAXParser saxParser = saxParserFactory.newSAXParser();
+			FileHandler handler = new FileHandler();
+			saxParser.parse(new File("/Pantoja/WORKSPACE/PANTOJACHANNEL/ardSCLAIM_CN_v001/src/client/config.xml"),
+					handler);
+			Ambient ambient = this.findAmbient(handler.getAmbient());
+			Device device = handler.getDevice();
+			if (ambient == null) {
+				ambient = new Ambient();
+				ambient.setDescription(handler.getAmbient());
+				this.ambients.add(ambient);
 			}
-			Functionality functionality = device.findFunctionality(description);
-			int nextValue = description.length() + 6;
-			int shift = this.hex2int(char2int(message[nextValue + 1]), char2int(message[nextValue]));
-			for (int cont = nextValue + 2; cont <= (shift + nextValue + 1); cont++) {
-				value += message[cont];
+			ambient.getDevices().add(device);
+		} catch (ParserConfigurationException | SAXException | IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	public Ambient findAmbient(String description) {
+		for (Ambient ambient : this.ambients) {
+			if (ambient.getDescription().equals(description)) {
+				return ambient;
 			}
-			functionality.setValue(Double.parseDouble(value));
-			System.out.println("[STaaS]: " + functionality.getValue());
-		} else {
-			System.out.println("[STaaS]: The preamble does not match!");
 		}
-	}
-
-	private int char2int(char charValue) {
-		int intValue = 0;
-		switch (charValue) {
-		case '1':
-			intValue = 1;
-			break;
-		case '2':
-			intValue = 2;
-			break;
-		case '3':
-			intValue = 3;
-			break;
-		case '4':
-			intValue = 4;
-			break;
-		case '5':
-			intValue = 5;
-			break;
-		case '6':
-			intValue = 6;
-			break;
-		case '7':
-			intValue = 7;
-			break;
-		case '8':
-			intValue = 8;
-			break;
-		case '9':
-			intValue = 9;
-			break;
-		case 'a':
-			intValue = 10;
-			break;
-		case 'b':
-			intValue = 11;
-			break;
-		case 'c':
-			intValue = 12;
-			break;
-		case 'd':
-			intValue = 13;
-			break;
-		case 'e':
-			intValue = 14;
-			break;
-		case 'f':
-			intValue = 15;
-			break;
-		}
-		return intValue;
-	}
-
-	private int hex2int(int x, int y) {
-		int converted = x + (y * 16);
-		return converted;
+		return null;
 	}
 
 }
