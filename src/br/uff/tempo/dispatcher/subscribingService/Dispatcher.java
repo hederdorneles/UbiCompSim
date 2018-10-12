@@ -1,4 +1,4 @@
-package br.ic.uff.tempo.dispatcher.subscribingService;
+package br.uff.tempo.dispatcher.subscribingService;
 
 import java.util.LinkedList;
 import java.util.Queue;
