@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<device id="bb103877-8335-444a-be5f-db8d916f6758" ambient="room" description="ST_001 - Sensors Device">
+	<functionality>
+		<description>temperature</description>
+	</functionality>
+	<functionality>
+		<description>luminosity</description>
+	</functionality>
+	<functionality>
+		<description>lights</description>
+	</functionality>
+</device>
