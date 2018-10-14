@@ -6,5 +6,4 @@ public class Main {
 		Cycle controlCycle = new Cycle();
 		controlCycle.run();
 	}
-	
 }

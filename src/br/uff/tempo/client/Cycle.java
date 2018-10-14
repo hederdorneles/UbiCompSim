@@ -21,12 +21,13 @@ public class Cycle implements Runnable {
 
 	private void sendData() {
 		/* A instância do Javino vai estar aqui para todas as portas seriais possíveis. */
+		Random rand = new Random();
+		Integer n1 = rand.nextInt(50) + 1;
+		Integer n2 = rand.nextInt(2);
+		Integer n3 = rand.nextInt(100) + 1;
+		String javinoMsg = "temperature;" + n1 + ";lights;" + n2 + ";luminosity;" + n3 + ";";
+		String message = this.client.getAmbient() + ";" + javinoMsg;
 		if (this.client.isRegistered()) {
-			Random rand = new Random();
-			Integer n1 = rand.nextInt(50) + 1;
-			Integer n2 = rand.nextInt(2);
-			Integer n3 = rand.nextInt(100) + 1;
-			String message = "temperature;" + n1 + ";lights;" + n2 + ";luminosity;" + n3 + ";";
 			this.client.sendMessage(message);
 			System.out.println("[ST]: I sent a message to the STaaS!");
 		}
@@ -36,7 +37,6 @@ public class Cycle implements Runnable {
 		try {
 			Thread.sleep(miliseconds);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -45,9 +45,14 @@ public class Cycle implements Runnable {
 		System.out.println("[ST]: I am prepared to execute an action!");
 		if (!this.client.getActions().isEmpty()) {
 			Action action = this.client.getActions().poll();
-			System.out.println("[ST]: Executing the command '" + action.getCommand() + "'");
+			this.executeAction(action.getCommand(), "COM5");
 		} else
 			System.out.println("[ST]: I don't have any action to execute!");
 		System.out.println("[ST]: There is/are " + this.client.getActions().size() + " action yet to be executed!");
 	}
+	
+	private void executeAction(String command, String serialPort){
+		System.out.println("[ST]: Executing the command '" + command + "'");
+	}
+	
 }

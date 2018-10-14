@@ -1,13 +1,33 @@
 package br.uff.tempo.dispatcher.publishing;
 
+import java.util.ArrayList;
+
 public class Functionality {
 
 	private double value = 0;
 	private boolean isBusy = false;
 	private String description = new String();
+	private String port = "COM1";
+	private ArrayList<String> commands = new ArrayList<String>();
 
 	public Functionality() {
 
+	}
+
+	public ArrayList<String> getCommands() {
+		return commands;
+	}
+
+	public void setCommands(ArrayList<String> commands) {
+		this.commands = commands;
+	}
+
+	public String getPort() {
+		return port;
+	}
+
+	public void setPort(String port) {
+		this.port = port;
 	}
 
 	public double getValue() {

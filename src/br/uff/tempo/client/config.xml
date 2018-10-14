@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<device id="bb103877-8335-444a-be5f-db8d916f6758" ambient="room" description="ST_001 - Sensors Device">
+<device id="bb103877-8335-444a-be5f-db8d916f6758" ambient="bedroom" description="ST_001">
 	<functionality>
 		<description>temperature</description>
 	</functionality>
 	<functionality>
 		<description>luminosity</description>
 	</functionality>
-	<functionality>
+	<functionality port="COM5">
 		<description>lights</description>
+			<command>turnOnLight</command>
+			<command>turnOffLight</command>
 	</functionality>
 </device>
