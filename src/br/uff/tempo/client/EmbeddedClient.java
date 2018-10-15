@@ -26,6 +26,8 @@ import lac.cnclib.net.mrudp.MrUdpNodeConnection;
 import lac.cnclib.sddl.message.ApplicationMessage;
 import lac.cnclib.sddl.message.Message;
 import lac.cnclib.sddl.serialization.Serialization;
+import lac.cnet.sddl.objects.ApplicationObject;
+import lac.cnet.sddl.udi.core.UniversalDDSLayerFactory.SupportedDDSVendors;
 import xmlHandler.FileHandler;
 
 public class EmbeddedClient implements NodeConnectionListener {
@@ -35,9 +37,11 @@ public class EmbeddedClient implements NodeConnectionListener {
 	private MrUdpNodeConnection connection;
 	private UUID myUUID;
 	private String ambient = "";
-	private Device device = new Device();
+	private Device device = null;
 	private boolean registered = false;
+	private boolean mounted = false;
 	private Queue<Action> actions = new LinkedList<Action>();
+	private String fileAddress = "/Pantoja/WORKSPACE/PANTOJACHANNEL/STaaS/src/client/config.xml";
 
 	public boolean isRegistered() {
 		return registered;
@@ -75,16 +79,18 @@ public class EmbeddedClient implements NodeConnectionListener {
 
 	@Override
 	public void connected(NodeConnection remoteCon) {
-		ApplicationMessage message = new ApplicationMessage();
-		String serializableContent = "XML";
-		message.setContentObject(serializableContent);
-
-		// CustomData serializableContent = new CustomData(caption, imageName);
-
-		try {
-			connection.sendMessage(message);
-		} catch (IOException e) {
-			e.printStackTrace();
+		if (this.mounted) {
+			Message message = new ApplicationMessage();
+			File xml = new File(this.fileAddress);
+			message.setContentObject(xml);
+			//Device temp = new Device();
+			//temp = (Device) message.getContentObject();
+			//message.setContentObject("XML");
+			try {
+				connection.sendMessage(message);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -124,10 +130,15 @@ public class EmbeddedClient implements NodeConnectionListener {
 		try {
 			SAXParser saxParser = saxParserFactory.newSAXParser();
 			FileHandler handler = new FileHandler();
-			saxParser.parse(new File("/Pantoja/WORKSPACE/PANTOJACHANNEL/STaaS/src/client/config.xml"), handler);
+			saxParser.parse(new File(this.fileAddress), handler);
 			this.ambient = handler.getAmbient();
 			this.device = handler.getDevice();
-			System.out.println("------------------------------------------------------------");
+			if (this.device != null)
+				this.mounted = true;
+			/* 
+			 * Esse código só printa a montagem do xml no Cliente.
+			 * 
+			 * System.out.println("------------------------------------------------------------");
 			int cont = 0;
 			for (Functionality f : this.device.getFunctionalities()) {
 				cont++;
@@ -138,8 +149,8 @@ public class EmbeddedClient implements NodeConnectionListener {
 				}
 
 			}
-
 			System.out.println("------------------------------------------------------------");
+			 */
 		} catch (ParserConfigurationException | SAXException | IOException e) {
 			e.printStackTrace();
 		}

@@ -20,6 +20,7 @@ import dispatcher.publishing.Functionality;
 import dispatcher.subscribingService.Dispatcher;
 import dispatcher.subscribingService.SubscriberImpl;
 import lac.cnclib.sddl.message.ApplicationMessage;
+
 import lac.cnclib.sddl.serialization.Serialization;
 import lac.cnet.sddl.objects.ApplicationObject;
 import lac.cnet.sddl.objects.Message;
@@ -74,21 +75,21 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 	@Override
 	public void onNewData(ApplicationObject topicSample) {
 		Message message = (Message) topicSample;
-		this.messageTreatment(message);
+		String className = Serialization.fromJavaByteStream(message.getContent()).getClass().toString();
+		if (className.equals("class java.io.File")) {
+			File xml = (File) Serialization.fromJavaByteStream(message.getContent());
+			this.mountDevice(xml);
+			this.sendMessage(message.getSenderId(), message.getGatewayId(), "registered");
+		} else {
+			String data = (String) Serialization.fromJavaByteStream(message.getContent());
+			this.extractMessage(data, message.getSenderId().toString());
+		}
+		/* Apenas para imprimir os valores do ambiente bedroom.
+		 * E enviar uma mensagem para testar o cliente. */
 		Ambient amb = this.findAmbient("bedroom");
 		if (amb != null)
 			amb.printDeviceList();
 		this.sendMessage(message.getSenderId(), message.getGatewayId(), "lights;Device1;turnOn");
-	}
-
-	private void messageTreatment(Message message) {
-		String data = (String) Serialization.fromJavaByteStream(message.getContent());
-		if (data.equals("XML")) {
-			this.mountDevice();
-			this.sendMessage(message.getSenderId(), message.getGatewayId(), "registered");
-		} else {
-			this.extractMessage(data, message.getSenderId().toString());
-		}
 	}
 
 	private void extractMessage(String data, String sender) {
@@ -113,12 +114,15 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 		}
 	}
 
-	private void mountDevice() {
+	private void mountDevice(File xml) {
 		SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
 		try {
 			SAXParser saxParser = saxParserFactory.newSAXParser();
 			FileHandler handler = new FileHandler();
-			saxParser.parse(new File("/Pantoja/WORKSPACE/PANTOJACHANNEL/STaaS/src/client/config.xml"), handler);
+			saxParser.parse(xml, handler);
+			// saxParser.parse(new
+			// File("/Pantoja/WORKSPACE/PANTOJACHANNEL/STaaS/src/client/config.xml"),
+			// handler);
 			Ambient ambient = this.findAmbient(handler.getAmbient());
 			Device device = handler.getDevice();
 			if (ambient == null) {

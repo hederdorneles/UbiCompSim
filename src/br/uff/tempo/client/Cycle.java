@@ -9,7 +9,7 @@ public class Cycle implements Runnable {
 	public void run() {
 		while (true) {
 			this.sendData();
-			this.sleep(1000);
+			this.sleep(2000);
 			/*
 			 * Tem que tomar uma decisão para ver se é melhor executar todas as
 			 * ações de uma vez ou executar uma ação por vez. Atualmente o
