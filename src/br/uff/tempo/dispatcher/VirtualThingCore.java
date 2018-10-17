@@ -3,6 +3,7 @@ package br.uff.tempo.dispatcher;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -11,6 +12,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
+import org.apache.commons.io.FileUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.xml.sax.SAXException;
 
 import dispatcher.publishing.Ambient;
@@ -19,8 +23,8 @@ import dispatcher.publishing.Device;
 import dispatcher.publishing.Functionality;
 import dispatcher.subscribingService.Dispatcher;
 import dispatcher.subscribingService.SubscriberImpl;
-import lac.cnclib.sddl.message.ApplicationMessage;
 
+import lac.cnclib.sddl.message.ApplicationMessage;
 import lac.cnclib.sddl.serialization.Serialization;
 import lac.cnet.sddl.objects.ApplicationObject;
 import lac.cnet.sddl.objects.Message;
@@ -28,6 +32,7 @@ import lac.cnet.sddl.objects.PrivateMessage;
 import lac.cnet.sddl.udi.core.SddlLayer;
 import lac.cnet.sddl.udi.core.UniversalDDSLayerFactory;
 import lac.cnet.sddl.udi.core.listener.UDIDataReaderListener;
+
 import xmlHandler.FileHandler;
 
 public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject> {
@@ -55,6 +60,7 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 		core.createDataWriter(toMobileNodeTopic);
 
 		System.out.println("=== Server Started (Listening) ===");
+		this.proccessCPSGraph();
 
 		SubscriberImpl subscriber = new SubscriberImpl();
 		subscriber.addSubscriber("bedroom", this.dispatcher);
@@ -84,12 +90,14 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 			String data = (String) Serialization.fromJavaByteStream(message.getContent());
 			this.extractMessage(data, message.getSenderId().toString());
 		}
-		/* Apenas para imprimir os valores do ambiente bedroom.
-		 * E enviar uma mensagem para testar o cliente. */
+		/*
+		 * Apenas para imprimir os valores do ambiente bedroom. E enviar uma
+		 * mensagem para testar o cliente.
+		 */
 		Ambient amb = this.findAmbient("bedroom");
 		if (amb != null)
 			amb.printDeviceList();
-		this.sendMessage(message.getSenderId(), message.getGatewayId(), "lights;Device1;turnOn");
+		this.sendMessage(message.getSenderId(), message.getGatewayId(), "ST_001;lights;turnOn");
 	}
 
 	private void extractMessage(String data, String sender) {
@@ -158,6 +166,68 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 	public void sendDataForDispatcher(String device, String functionality, String value) {
 		Data message = new Data(this.current.getDescription(), functionality, device, value);
 		this.dispatcher.addMessageToQueue(message);
+	}
+
+	@SuppressWarnings("unchecked")
+	public void proccessCPSGraph() {
+		/* Não esquecer de pegar os edges para fazer o graph matching */
+		File file = new File("./graph.txt");
+		try {
+			String content = FileUtils.readFileToString(file, "utf-8");
+			JSONObject graphJson = new JSONObject(content);
+			JSONObject graphs = (JSONObject) graphJson.opt("environments");
+
+			ArrayList<JSONObject> ambients = new ArrayList<>();
+			ArrayList<JSONObject> nodes = new ArrayList<>();
+			ArrayList<JSONObject> devices = new ArrayList<>();
+
+			Iterator<String> itGraph = graphs.keys();
+			Iterator<String> itAmbient = null;
+			Iterator<String> itNodes = null;
+
+			while (itGraph.hasNext()) {
+				String idAmb = itGraph.next();
+				//System.out.println("[STaas]: Id Ambient - " + idAmb);
+				ambients.add(graphs.getJSONObject(idAmb));
+			}
+
+			for (JSONObject obj : ambients) {
+				itAmbient = obj.keys();
+				while (itAmbient.hasNext()) {
+					/*
+					 * Aqui eu consigo pegar os nodes e edges
+					 */
+					String idNod = itAmbient.next();
+					if (idNod.equals("type"))
+						System.out.println("[STaaS]: Type - " + obj.getString(idNod));
+					if (idNod.equals("capacity"))
+						System.out.println("[STaaS]: Capacity - " + obj.getString(idNod));
+					if (idNod.equals("nodes")) {
+						nodes.add(obj.getJSONObject(idNod));
+						for (JSONObject nod : nodes) {
+							itNodes = nod.keys();
+							while (itNodes.hasNext()) {
+								String idDev = itNodes.next();
+								System.out.println(idDev);
+								devices.add(nod.getJSONObject(idDev));
+							}
+						}
+					}
+				}
+			}
+
+			for (JSONObject dev : devices) {
+				/* descobrir os keys e depois fazer if caso os keys existam */
+				System.out.println(dev.get("class"));
+				// System.out.println(dev.get("action"));
+			}
+
+		} catch (JSONException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 	}
 
 }
