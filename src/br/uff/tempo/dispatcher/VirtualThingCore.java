@@ -177,52 +177,45 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 			JSONObject graphJson = new JSONObject(content);
 			JSONObject graphs = (JSONObject) graphJson.opt("environments");
 
-			ArrayList<JSONObject> ambients = new ArrayList<>();
-			ArrayList<JSONObject> nodes = new ArrayList<>();
-			ArrayList<JSONObject> devices = new ArrayList<>();
-
 			Iterator<String> itGraph = graphs.keys();
 			Iterator<String> itAmbient = null;
 			Iterator<String> itNodes = null;
 
 			while (itGraph.hasNext()) {
+				System.out.println("------------------------ ENVIRONMENT ------------------------");
 				String idAmb = itGraph.next();
-				//System.out.println("[STaas]: Id Ambient - " + idAmb);
-				ambients.add(graphs.getJSONObject(idAmb));
-			}
-
-			for (JSONObject obj : ambients) {
-				itAmbient = obj.keys();
+				System.out.println("[STaas]: Ambient - " + idAmb);
+				JSONObject ambient = graphs.getJSONObject(idAmb);
+				itAmbient = ambient.keys();
 				while (itAmbient.hasNext()) {
 					/*
 					 * Aqui eu consigo pegar os nodes e edges
 					 */
 					String idNod = itAmbient.next();
 					if (idNod.equals("type"))
-						System.out.println("[STaaS]: Type - " + obj.getString(idNod));
+						System.out.println("[STaaS]: Type - " + ambient.getString(idNod));
 					if (idNod.equals("capacity"))
-						System.out.println("[STaaS]: Capacity - " + obj.getString(idNod));
+						System.out.println("[STaaS]: Capacity - " + ambient.getString(idNod));
 					if (idNod.equals("nodes")) {
-						nodes.add(obj.getJSONObject(idNod));
-						for (JSONObject nod : nodes) {
-							itNodes = nod.keys();
-							while (itNodes.hasNext()) {
-								String idDev = itNodes.next();
-								System.out.println(idDev);
-								devices.add(nod.getJSONObject(idDev));
-							}
+						JSONObject node = ambient.getJSONObject(idNod);
+						itNodes = node.keys();// itNodes = nod.keys();
+						while (itNodes.hasNext()) {
+							String idDev = itNodes.next();
+							System.out.println("[STaaS]: Device - " + idDev);
+							JSONObject device = node.getJSONObject(idDev);
+							System.out.println("-------> Class - " + device.get("class"));
+							/*
+							 * descobrir os keys e depois fazer if caso os keys
+							 * existam
+							 */
 						}
 					}
 				}
 			}
 
-			for (JSONObject dev : devices) {
-				/* descobrir os keys e depois fazer if caso os keys existam */
-				System.out.println(dev.get("class"));
-				// System.out.println(dev.get("action"));
-			}
+		} catch (
 
-		} catch (JSONException e) {
+		JSONException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
