@@ -1,6 +1,7 @@
 package br.uff.tempo.dispatcher.request;
 
 import java.util.ArrayList;
+import dispatcher.publishing.Functionality;
 
 public class Requisition {
 
@@ -23,22 +24,23 @@ public class Requisition {
 		this.graphs = graphs;
 	}
 
-	private void execute(){
-		
+	public void printRequisition() {
+		for (Graph graph : this.graphs) {
+			System.out.println("---------------- PRINTING " + graph.getId() + " ----------------");
+			System.out.println("[STaaS]: INFO - " + graph.getType() + " - " + graph.getCapacity());
+			for (Functionality functionality : graph.getBookedFunctions()) {
+				System.out.println("[STaaS] Functionality - " + functionality.getDescription());
+			}
+		}
+
 	}
-	
+
+	private void execute() {
+
+	}
+
 	private void unlockAll() {
-		
-	}
 
-    private void lock() {
-		
-	}
-
-	private void unlock() {
-		
 	}
 
 }
-
-

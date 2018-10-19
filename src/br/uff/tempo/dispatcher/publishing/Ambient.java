@@ -7,6 +7,7 @@ public class Ambient {
 
 	private int id = 0;
 	private String description = new String();
+	private String type = new String();
 	private ArrayList<Device> devices = new ArrayList<Device>();
 
 	public int getId() {
@@ -23,6 +24,14 @@ public class Ambient {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
 	}
 
 	public ArrayList<Device> getDevices() {
@@ -59,6 +68,8 @@ public class Ambient {
 			for (Iterator<Functionality> iteratorF = ts.getFunctionalities().iterator(); iteratorF.hasNext();) {
 				Functionality tf = iteratorF.next();
 				System.out.print("---------> ");
+				if (tf.isBusy())
+					System.out.print("[LOCKED] ");
 				System.out.println(tf.getDescription() + " - " + tf.getValue());
 			}
 			System.out.println(" ");

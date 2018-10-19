@@ -35,4 +35,27 @@ public class Graph {
 		this.capacity = capacity;
 	}
 
+	public ArrayList<Functionality> getBookedFunctions() {
+		return bookedFunctions;
+	}
+
+	public void setBookedFunctions(ArrayList<Functionality> bookedFunctions) {
+		this.bookedFunctions = bookedFunctions;
+	}
+
+	public void lock() {
+		for (Functionality function : this.bookedFunctions) {
+			function.setBusy(true);
+		}
+	}
+
+	public void unlock() {
+		for (Functionality function : this.bookedFunctions) {
+			function.setBusy(false);
+		}
+	}
+
+	public void execute() {
+
+	}
 }

@@ -21,6 +21,8 @@ import dispatcher.publishing.Ambient;
 import dispatcher.publishing.Data;
 import dispatcher.publishing.Device;
 import dispatcher.publishing.Functionality;
+import dispatcher.request.Graph;
+import dispatcher.request.Requisition;
 import dispatcher.subscribingService.Dispatcher;
 import dispatcher.subscribingService.SubscriberImpl;
 
@@ -60,14 +62,14 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 		core.createDataWriter(toMobileNodeTopic);
 
 		System.out.println("=== Server Started (Listening) ===");
-		this.proccessCPSGraph();
 
-		SubscriberImpl subscriber = new SubscriberImpl();
-		subscriber.addSubscriber("bedroom", this.dispatcher);
-		SubscriberImpl subscriber2 = new SubscriberImpl();
-		subscriber2.addSubscriber("room", this.dispatcher);
-		subscriber.run();
-		// subscriber2.run();
+		/*
+		 * TESTE PARA O PUBLISH & SUBSCRIBER SubscriberImpl subscriber = new
+		 * SubscriberImpl(); subscriber.addSubscriber("bedroom",
+		 * this.dispatcher); SubscriberImpl subscriber2 = new SubscriberImpl();
+		 * subscriber2.addSubscriber("room", this.dispatcher); subscriber.run();
+		 * subscriber2.run();
+		 */
 
 		synchronized (this) {
 			try {
@@ -94,9 +96,11 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 		 * Apenas para imprimir os valores do ambiente bedroom. E enviar uma
 		 * mensagem para testar o cliente.
 		 */
-		Ambient amb = this.findAmbient("bedroom");
-		if (amb != null)
+		Ambient amb = this.findAmbient("room");
+		if (amb != null) {
 			amb.printDeviceList();
+			this.proccessCPSGraph();
+		}
 		this.sendMessage(message.getSenderId(), message.getGatewayId(), "ST_001;lights;turnOn");
 	}
 
@@ -136,6 +140,7 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 			if (ambient == null) {
 				ambient = new Ambient();
 				ambient.setDescription(handler.getAmbient());
+				ambient.setType("room");
 				this.ambients.add(ambient);
 			}
 			ambient.getDevices().add(device);
@@ -147,6 +152,15 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 	public Ambient findAmbient(String description) {
 		for (Ambient ambient : this.ambients) {
 			if (ambient.getDescription().equals(description)) {
+				return ambient;
+			}
+		}
+		return null;
+	}
+
+	public Ambient findAmbientByType(String type) {
+		for (Ambient ambient : this.ambients) {
+			if (ambient.getType().equals(type)) {
 				return ambient;
 			}
 		}
@@ -170,6 +184,7 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 
 	@SuppressWarnings("unchecked")
 	public void proccessCPSGraph() {
+		Requisition requisition = new Requisition();
 		/* Não esquecer de pegar os edges para fazer o graph matching */
 		File file = new File("./graph.txt");
 		try {
@@ -177,14 +192,16 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 			JSONObject graphJson = new JSONObject(content);
 			JSONObject graphs = (JSONObject) graphJson.opt("environments");
 
+			requisition.setId("req-test-01");
+
 			Iterator<String> itGraph = graphs.keys();
 			Iterator<String> itAmbient = null;
 			Iterator<String> itNodes = null;
 
 			while (itGraph.hasNext()) {
-				System.out.println("------------------------ ENVIRONMENT ------------------------");
 				String idAmb = itGraph.next();
-				System.out.println("[STaas]: Ambient - " + idAmb);
+				Graph graph = new Graph();
+				graph.setId(idAmb);
 				JSONObject ambient = graphs.getJSONObject(idAmb);
 				itAmbient = ambient.keys();
 				while (itAmbient.hasNext()) {
@@ -192,18 +209,25 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 					 * Aqui eu consigo pegar os nodes e edges
 					 */
 					String idNod = itAmbient.next();
-					if (idNod.equals("type"))
-						System.out.println("[STaaS]: Type - " + ambient.getString(idNod));
-					if (idNod.equals("capacity"))
-						System.out.println("[STaaS]: Capacity - " + ambient.getString(idNod));
+					if (idNod.equals("type")) {
+						graph.setType(ambient.getString(idNod));
+					}
+					if (idNod.equals("capacity")) {
+						graph.setCapacity(ambient.getString(idNod));
+					}
 					if (idNod.equals("nodes")) {
+						/*
+						 * Verificar aqui se o ambientReal tem os dispositivos
+						 * com as funcionalidades desejadas
+						 */
 						JSONObject node = ambient.getJSONObject(idNod);
 						itNodes = node.keys();// itNodes = nod.keys();
 						while (itNodes.hasNext()) {
 							String idDev = itNodes.next();
-							System.out.println("[STaaS]: Device - " + idDev);
 							JSONObject device = node.getJSONObject(idDev);
-							System.out.println("-------> Class - " + device.get("class"));
+							Functionality functionality = new Functionality();
+							functionality.setDescription(device.getString("class"));
+							graph.getBookedFunctions().add(functionality);
 							/*
 							 * descobrir os keys e depois fazer if caso os keys
 							 * existam
@@ -211,6 +235,14 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 						}
 					}
 				}
+				if (this.matchRequisition(graph))
+					graph.lock();
+					requisition.getGraphs().add(graph);					
+			}
+
+			for (Graph g : requisition.getGraphs()) {
+				System.out.println("---------------- MATCHING ----------------");
+				System.out.println("[STaaS]: " + g.getId() + " - " + this.matchRequisition(g));
 			}
 
 		} catch (
@@ -220,7 +252,39 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
 	}
 
+	public boolean matchRequisition(Graph graph) {
+		ArrayList<Functionality> functionsToLock = new ArrayList<Functionality>();
+		Boolean match = true;
+		if (this.ambients.size() == 0)
+			match = false;
+		for (Ambient ambient : this.ambients) {
+			if (ambient.getType().equals(graph.getType())) {
+				for (Functionality function : graph.getBookedFunctions()) {
+					for (Device device : ambient.getDevices()) {
+						Functionality functionReal = device.findFunctionality(function.getDescription());
+						if (functionReal == null) {
+							match = false;
+						} else {
+							if (functionReal.isBusy()) {
+								match = false;
+							} else {
+								functionsToLock.add(functionReal);
+							}
+						}
+					}
+				}
+			} else {
+				match = false;
+			}
+			if (!match)
+				functionsToLock.clear();
+			else {
+				graph.setBookedFunctions(functionsToLock);
+				break;
+			}
+		}
+		return match;
+	}
 }
