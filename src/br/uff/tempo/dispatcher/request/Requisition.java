@@ -39,8 +39,9 @@ public class Requisition {
 
 	}
 
-	private void unlockAll() {
-
+	private void unlock() {
+		for (Graph graph : this.graphs)
+			graph.unlock();
 	}
 
 }

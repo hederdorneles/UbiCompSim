@@ -12,7 +12,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.xml.sax.SAXException;
@@ -24,7 +23,6 @@ import dispatcher.publishing.Functionality;
 import dispatcher.request.Graph;
 import dispatcher.request.Requisition;
 import dispatcher.subscribingService.Dispatcher;
-import dispatcher.subscribingService.SubscriberImpl;
 
 import lac.cnclib.sddl.message.ApplicationMessage;
 import lac.cnclib.sddl.serialization.Serialization;
@@ -34,14 +32,16 @@ import lac.cnet.sddl.objects.PrivateMessage;
 import lac.cnet.sddl.udi.core.SddlLayer;
 import lac.cnet.sddl.udi.core.UniversalDDSLayerFactory;
 import lac.cnet.sddl.udi.core.listener.UDIDataReaderListener;
-
+import webService.ResourceWebServer;
 import xmlHandler.FileHandler;
 
 public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject> {
 	SddlLayer core;
+	private ArrayList<Requisition> requisitions = new ArrayList<Requisition>();
 	private ArrayList<Ambient> ambients = new ArrayList<Ambient>();
 	private Ambient current = null;
 	private Dispatcher dispatcher = new Dispatcher();
+	private ResourceWebServer webService = new ResourceWebServer();
 
 	public static void main(String[] args) {
 		Logger.getLogger("").setLevel(Level.OFF);
@@ -71,6 +71,12 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 		 * subscriber2.run();
 		 */
 
+		try {
+			this.webService.start();
+		} catch (Exception e1) {
+			e1.printStackTrace();
+		}
+
 		synchronized (this) {
 			try {
 				this.wait();
@@ -90,7 +96,12 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 			this.sendMessage(message.getSenderId(), message.getGatewayId(), "registered");
 		} else {
 			String data = (String) Serialization.fromJavaByteStream(message.getContent());
-			this.extractMessage(data, message.getSenderId().toString());
+			if (message.getSenderId().toString().equals("ff000000-0000-0000-0000-000000000000")) {
+				this.sendMessage(message.getSenderId(), message.getGatewayId(), this.proccessCPSGraph(data));
+			} else {
+				this.extractMessage(data, message.getSenderId().toString());
+				this.sendMessage(message.getSenderId(), message.getGatewayId(), "ST_001;lights;turnOn");
+			}
 		}
 		/*
 		 * Apenas para imprimir os valores do ambiente bedroom. E enviar uma
@@ -99,9 +110,8 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 		Ambient amb = this.findAmbient("room");
 		if (amb != null) {
 			amb.printDeviceList();
-			this.proccessCPSGraph();
+			// this.proccessCPSGraph();
 		}
-		this.sendMessage(message.getSenderId(), message.getGatewayId(), "ST_001;lights;turnOn");
 	}
 
 	private void extractMessage(String data, String sender) {
@@ -183,12 +193,13 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 	}
 
 	@SuppressWarnings("unchecked")
-	public void proccessCPSGraph() {
+	public String proccessCPSGraph(String json) {
 		Requisition requisition = new Requisition();
 		/* Não esquecer de pegar os edges para fazer o graph matching */
-		File file = new File("./graph.txt");
+		// File file = new File("./graph.txt");
 		try {
-			String content = FileUtils.readFileToString(file, "utf-8");
+			// String content = FileUtils.readFileToString(file, "utf-8");
+			String content = json;
 			JSONObject graphJson = new JSONObject(content);
 			JSONObject graphs = (JSONObject) graphJson.opt("environments");
 
@@ -221,7 +232,7 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 						 * com as funcionalidades desejadas
 						 */
 						JSONObject node = ambient.getJSONObject(idNod);
-						itNodes = node.keys();// itNodes = nod.keys();
+						itNodes = node.keys();
 						while (itNodes.hasNext()) {
 							String idDev = itNodes.next();
 							JSONObject device = node.getJSONObject(idDev);
@@ -235,23 +246,21 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 						}
 					}
 				}
-				if (this.matchRequisition(graph))
+				if (this.matchRequisition(graph)) {
 					graph.lock();
-					requisition.getGraphs().add(graph);					
+					requisition.getGraphs().add(graph);
+				}
 			}
+			if (requisition.getGraphs().size() >= 1)
+				this.requisitions.add(requisition);
 
-			for (Graph g : requisition.getGraphs()) {
-				System.out.println("---------------- MATCHING ----------------");
-				System.out.println("[STaaS]: " + g.getId() + " - " + this.matchRequisition(g));
-			}
-
-		} catch (
-
-		JSONException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
+			System.out.println("*****************************");
+			System.out.println("ANSWER IS " + getJsonAnswer(requisition));
+			System.out.println("*****************************");
+		} catch (JSONException e) {
 			e.printStackTrace();
 		}
+		return getJsonAnswer(requisition);
 	}
 
 	public boolean matchRequisition(Graph graph) {
@@ -286,5 +295,19 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 			}
 		}
 		return match;
+	}
+
+	private String getJsonAnswer(Requisition r) {
+		String answer = "{" + r.getId() + ":[";
+		int cont = 0;
+		for (Graph g : r.getGraphs()) {
+			cont++;
+			if (cont == 1)
+				answer += g.getId();
+			else
+				answer += "," + g.getId();
+		}
+		answer += "]}";
+		return answer;
 	}
 }
