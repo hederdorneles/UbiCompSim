@@ -3,7 +3,7 @@ package br.uff.tempo.dispatcher.publishing;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class Ambient {
+public class Environment {
 
 	private int id = 0;
 	private String description = new String();
@@ -74,8 +74,8 @@ public class Ambient {
 			System.out.println("--------------------------------------------------");
 			System.out.println("ID: " + ts.getId());
 			System.out.println("DESCRIPTION: " + ts.getDescription());
-			for (Iterator<Functionality> iteratorF = ts.getFunctionalities().iterator(); iteratorF.hasNext();) {
-				Functionality tf = iteratorF.next();
+			for (Iterator<Resource> iteratorF = ts.getFunctionalities().iterator(); iteratorF.hasNext();) {
+				Resource tf = iteratorF.next();
 				System.out.print("---------> ");
 				if (tf.isBusy())
 					System.out.print("[LOCKED] ");

@@ -39,21 +39,21 @@ import lac.cnet.sddl.udi.core.listener.UDIDataReaderListener;
 import webService.ResourceWebServer;
 import xmlHandler.FileHandler;
 
-public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject> {
+public class ResourceManagement implements UDIDataReaderListener<ApplicationObject> {
 	SddlLayer core;
 	private String gatewayIP = "127.0.0.1";
 	private ArrayList<Requisition> requisitions = new ArrayList<Requisition>();
-	private ArrayList<Ambient> ambients = new ArrayList<Ambient>();
-	private Ambient current = null;
+	private ArrayList<Environment> ambients = new ArrayList<Environment>();
+	private Environment current = null;
 	private Dispatcher dispatcher = new Dispatcher();
 	private ResourceWebServer webService = new ResourceWebServer();
 
 	public static void main(String[] args) {
 		Logger.getLogger("").setLevel(Level.OFF);
-		new VirtualThingCore();
+		new ResourceManagement();
 	}
 
-	public VirtualThingCore() {
+	public ResourceManagement() {
 		core = UniversalDDSLayerFactory.getInstance();
 		core.createParticipant(UniversalDDSLayerFactory.CNET_DOMAIN);
 
@@ -113,7 +113,7 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 		 * mensagem para testar o cliente.
 		 */
 
-		for (Ambient amb : this.ambients) {
+		for (Environment amb : this.ambients) {
 			System.out.println("AMBIENT: " + amb.getDescription() + " - " + amb.getType());
 			System.out.println("--------------------------------------------------");
 			if (amb != null) {
@@ -129,7 +129,7 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 		String functionalities[] = data.split(";");
 		this.current = this.findAmbient(functionalities[0]);
 		if (this.current == null) {
-			this.current = new Ambient();
+			this.current = new Environment();
 			System.out.println("[STaaS]: The Ambient is not Registered Yet!");
 		} else {
 			Device tempDevice = this.current.findDevice(sender);
@@ -137,7 +137,7 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 				System.out.println("[STaaS]: The Device is not Registered Yet!");
 			else {
 				for (int cont = 1; cont <= functionalities.length - 1; cont++) {
-					Functionality functionality = tempDevice.findFunctionality(functionalities[cont]);
+					Resource functionality = tempDevice.findFunctionality(functionalities[cont]);
 					functionality.setValue(Double.parseDouble(functionalities[cont + 1]));
 					this.sendDataForDispatcher(tempDevice.getDescription(), functionalities[cont],
 							functionalities[cont + 1]);
@@ -156,10 +156,10 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 			// saxParser.parse(new
 			// File("/Pantoja/WORKSPACE/PANTOJACHANNEL/STaaS/src/client/config.xml"),
 			// handler);
-			Ambient ambient = this.findAmbient(handler.getAmbient());
+			Environment ambient = this.findAmbient(handler.getAmbient());
 			Device device = handler.getDevice();
 			if (ambient == null) {
-				ambient = new Ambient();
+				ambient = new Environment();
 				ambient.setDescription(handler.getAmbient());
 				ambient.setType(handler.getType());
 				ambient.setCapacity(Double.parseDouble(handler.getCapacity()));
@@ -172,8 +172,8 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 		}
 	}
 
-	public Ambient findAmbient(String description) {
-		for (Ambient ambient : this.ambients) {
+	public Environment findAmbient(String description) {
+		for (Environment ambient : this.ambients) {
 			if (ambient.getDescription().equals(description)) {
 				return ambient;
 			}
@@ -181,8 +181,8 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 		return null;
 	}
 
-	public Ambient findAmbientByType(String type) {
-		for (Ambient ambient : this.ambients) {
+	public Environment findAmbientByType(String type) {
+		for (Environment ambient : this.ambients) {
 			if (ambient.getType().equals(type)) {
 				return ambient;
 			}
@@ -229,7 +229,7 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 		String message = null;
 		for (Graph graph : requisition.getGraphs()) {
 			for (String senderId : graph.getMappedFunctions().keySet()) {
-				for (Functionality functionality : graph.getMappedFunctions().get(senderId)) {
+				for (Resource functionality : graph.getMappedFunctions().get(senderId)) {
 					message = functionality.getDescription() + ";" + functionality.getQueuedCommand();
 					this.sendMessage(UUID.fromString(senderId), UUID.fromString(this.gatewayIP), message);
 					System.out.println("MSG = " + message);
@@ -269,7 +269,7 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 						while (itNodes.hasNext()) {
 							String idDev = itNodes.next();
 							JSONObject device = node.getJSONObject(idDev);
-							Functionality functionality = new Functionality();
+							Resource functionality = new Resource();
 							functionality.setDescription(device.getString("class"));
 							String command = device.getString("property");
 							functionality.setQueuedCommand(command);
@@ -301,22 +301,22 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 
 	public boolean matchRequisition(Graph graph) {
 		System.out.println("-------------------------------------------------------------------------> ENTREI!");
-		Map<String, Set<Functionality>> mappedFunctions = new HashMap<String, Set<Functionality>>();
+		Map<String, Set<Resource>> mappedFunctions = new HashMap<String, Set<Resource>>();
 		Boolean match = true;
 		System.out.println("------------------------------------------------------------------------->"+this.ambients.size());
 		if (this.ambients.size() == 0)
 			match = false;
-		Iterator<Ambient> ambIt = this.ambients.iterator();
+		Iterator<Environment> ambIt = this.ambients.iterator();
 		//for (Ambient ambient : this.ambients) {
 		while (ambIt.hasNext()) {
-			Ambient ambient = ambIt.next();
+			Environment ambient = ambIt.next();
 			System.out.println("------------------------------------------------------------------------->"+ambient.getDescription());
 			if (ambient.getType().equals(graph.getType())
 					&& ambient.getCapacity() <= Double.parseDouble(graph.getCapacity())) {
-				for (Functionality function : graph.getBookedFunctions()) {
+				for (Resource function : graph.getBookedFunctions()) {
 					for (Device device : ambient.getDevices()) {
 						System.out.println("------------------------------------------------------------------------->"+device.getDescription());
-						Functionality functionReal = device.findFunctionality(function.getDescription());
+						Resource functionReal = device.findFunctionality(function.getDescription());
 						if (functionReal == null) {
 							match = false;
 						} else {
@@ -326,11 +326,11 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 								System.out.println("-------------------------------------------------------------------------> "+ functionReal.getDescription());
 								functionReal.setQueuedCommand(function.getQueuedCommand());
 								if (mappedFunctions.containsKey(device.getId())) {
-									Set<Functionality> functionalities = mappedFunctions.get(device.getId());
+									Set<Resource> functionalities = mappedFunctions.get(device.getId());
 									functionalities.add(functionReal);
 									mappedFunctions.put(device.getId(), functionalities);
 								} else {
-									Set<Functionality> functionalities = new HashSet<Functionality>();
+									Set<Resource> functionalities = new HashSet<Resource>();
 									functionalities.add(functionReal);
 									mappedFunctions.put(device.getId(), functionalities);
 								}

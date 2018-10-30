@@ -11,8 +11,8 @@ public class Graph {
 	private String id = null;
 	private String type = null;
 	private String capacity = null;
-	private ArrayList<Functionality> bookedFunctions = new ArrayList<>();
-	Map<String, Set<Functionality>> mappedFunctions = new HashMap<String, Set<Functionality>>();
+	private ArrayList<Resource> bookedFunctions = new ArrayList<>();
+	Map<String, Set<Resource>> mappedFunctions = new HashMap<String, Set<Resource>>();
 
 	public String getId() {
 		return id;
@@ -38,34 +38,34 @@ public class Graph {
 		this.capacity = capacity;
 	}
 
-	public ArrayList<Functionality> getBookedFunctions() {
+	public ArrayList<Resource> getBookedFunctions() {
 		return bookedFunctions;
 	}
 
-	public void setBookedFunctions(ArrayList<Functionality> bookedFunctions) {
+	public void setBookedFunctions(ArrayList<Resource> bookedFunctions) {
 		this.bookedFunctions = bookedFunctions;
 	}
 
-	public Map<String, Set<Functionality>> getMappedFunctions() {
+	public Map<String, Set<Resource>> getMappedFunctions() {
 		return mappedFunctions;
 	}
 
-	public void setMappedFunctions(Map<String, Set<Functionality>> mappedFunctions) {
+	public void setMappedFunctions(Map<String, Set<Resource>> mappedFunctions) {
 		this.mappedFunctions = mappedFunctions;
 	}
 
 	public void lock() {
 		for (String id : this.mappedFunctions.keySet()) {
-			Set<Functionality> function = this.mappedFunctions.get(id);
-			for (Functionality f : function)
+			Set<Resource> function = this.mappedFunctions.get(id);
+			for (Resource f : function)
 				f.setBusy(true);
 		}
 	}
 
 	public void unlock() {
 		for (String id : this.mappedFunctions.keySet()) {
-			Set<Functionality> function = this.mappedFunctions.get(id);
-			for (Functionality f : function) {
+			Set<Resource> function = this.mappedFunctions.get(id);
+			for (Resource f : function) {
 				f.setBusy(false);
 				f.setQueuedCommand(null);
 			}

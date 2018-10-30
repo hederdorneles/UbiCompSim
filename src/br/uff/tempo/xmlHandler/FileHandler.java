@@ -9,7 +9,7 @@ import dispatcher.publishing.Functionality;
 
 public class FileHandler extends DefaultHandler {
 
-	private Functionality func = null;
+	private Resource func = null;
 	private Device device = null;
 	private String ambient = null;
 	private String capacity = null;
@@ -47,7 +47,7 @@ public class FileHandler extends DefaultHandler {
 			this.device.setDescription(attributes.getValue("description"));
 			this.capacity = attributes.getValue("capacity");
 		} else if (qName.equalsIgnoreCase("functionality")) {
-			this.func = new Functionality();
+			this.func = new Resource();
 			this.func.setPort(attributes.getValue("port"));
 			this.device.getFunctionalities().add(this.func);
 		} else if (qName.equalsIgnoreCase("description")) {

@@ -7,8 +7,8 @@ public class Device {
 
 	private String id = new String();
 	private String description = new String();
-	private ArrayList<Functionality> functionalities = new ArrayList<Functionality>();
-	private Ambient ambient = new Ambient();
+	private ArrayList<Resource> functionalities = new ArrayList<Resource>();
+	private Environment ambient = new Environment();
 
 	public String getId() {
 		return id;
@@ -26,25 +26,25 @@ public class Device {
 		this.description = description;
 	}
 
-	public ArrayList<Functionality> getFunctionalities() {
+	public ArrayList<Resource> getFunctionalities() {
 		return functionalities;
 	}
 
-	public void setFunctionalities(ArrayList<Functionality> functionalities) {
+	public void setFunctionalities(ArrayList<Resource> functionalities) {
 		this.functionalities = functionalities;
 	}
 
-	public Ambient getAmbient() {
+	public Environment getAmbient() {
 		return ambient;
 	}
 
-	public void setAmbient(Ambient ambient) {
+	public void setAmbient(Environment ambient) {
 		this.ambient = ambient;
 	}
 	
-	public Functionality findFunctionality(String description) {
-		for (Iterator<Functionality> iterator = this.functionalities.iterator(); iterator.hasNext();) {
-			Functionality ts = iterator.next();
+	public Resource findFunctionality(String description) {
+		for (Iterator<Resource> iterator = this.functionalities.iterator(); iterator.hasNext();) {
+			Resource ts = iterator.next();
 			if (ts.getDescription().equals(description)) {
 				return ts;
 			}

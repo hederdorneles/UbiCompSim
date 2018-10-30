@@ -2,7 +2,7 @@ package br.uff.tempo.dispatcher.publishing;
 
 import java.util.ArrayList;
 
-public class Functionality {
+public class Resource {
 
 	private double value = 0;
 	private boolean isBusy = false;
@@ -11,7 +11,7 @@ public class Functionality {
 	private ArrayList<String> commands = new ArrayList<String>();
 	private String queuedCommand = null; 
 	
-	public Functionality() {
+	public Resource() {
 
 	}
 

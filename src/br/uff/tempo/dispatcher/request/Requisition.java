@@ -37,7 +37,7 @@ public class Requisition {
 		for (Graph graph : this.graphs) {
 			System.out.println("---------------- PRINTING " + graph.getId() + " ----------------");
 			System.out.println("[STaaS]: INFO - " + graph.getType() + " - " + graph.getCapacity());
-			for (Functionality functionality : graph.getBookedFunctions()) {
+			for (Resource functionality : graph.getBookedFunctions()) {
 				System.out.println("[STaaS] Functionality - " + functionality.getDescription());
 			}
 		}

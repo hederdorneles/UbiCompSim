@@ -26,7 +26,7 @@ public class Cycle implements Runnable {
 	private String gatherData(){
 		String perceptions = "";
 		ArrayList<String> availablePorts = new ArrayList<String>();
-		for (Functionality functionalities: this.client.getDevice().getFunctionalities()) {
+		for (Resource functionalities: this.client.getDevice().getFunctionalities()) {
 			if(!availablePorts.contains(functionalities.getPort()))
 				availablePorts.add(functionalities.getPort());			
 		}
@@ -62,7 +62,7 @@ public class Cycle implements Runnable {
 		if (!this.client.getActions().isEmpty()) {
 			Action action = this.client.getActions().poll();
 			if (action.getDevice().equals(this.client.getDevice().getDescription())) {
-				Functionality functionality = this.client.getDevice().findFunctionality(action.getFunction());
+				Resource functionality = this.client.getDevice().findFunctionality(action.getFunction());
 				this.executeAction(action.getCommand(), functionality.getPort());
 			}
 		} else
