@@ -3,7 +3,11 @@ package br.uff.tempo.dispatcher;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,6 +41,7 @@ import xmlHandler.FileHandler;
 
 public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject> {
 	SddlLayer core;
+	private String gatewayIP = "127.0.0.1";
 	private ArrayList<Requisition> requisitions = new ArrayList<Requisition>();
 	private ArrayList<Ambient> ambients = new ArrayList<Ambient>();
 	private Ambient current = null;
@@ -97,20 +102,26 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 		} else {
 			String data = (String) Serialization.fromJavaByteStream(message.getContent());
 			if (message.getSenderId().toString().equals("ff000000-0000-0000-0000-000000000000")) {
-				this.sendMessage(message.getSenderId(), message.getGatewayId(), this.proccessCPSGraph(data));
+				this.sendMessage(message.getSenderId(), message.getGatewayId(), this.proccessRequisition(data));
 			} else {
 				this.extractMessage(data, message.getSenderId().toString());
-				this.sendMessage(message.getSenderId(), message.getGatewayId(), "ST_001;lights;turnOn");
+				//this.sendMessage(message.getSenderId(), message.getGatewayId(), "lights;turnOn");
 			}
 		}
 		/*
 		 * Apenas para imprimir os valores do ambiente bedroom. E enviar uma
 		 * mensagem para testar o cliente.
 		 */
-		Ambient amb = this.findAmbient("room");
-		if (amb != null) {
-			amb.printDeviceList();
-			// this.proccessCPSGraph();
+
+		for (Ambient amb : this.ambients) {
+			System.out.println("AMBIENT: " + amb.getDescription() + " - " + amb.getType());
+			System.out.println("--------------------------------------------------");
+			if (amb != null) {
+				amb.printDeviceList();
+				// this.proccessCPSGraph();
+			}
+			System.out.println("--------------------------------------------------");
+			System.out.println(" ");
 		}
 	}
 
@@ -150,8 +161,10 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 			if (ambient == null) {
 				ambient = new Ambient();
 				ambient.setDescription(handler.getAmbient());
-				ambient.setType("room");
+				ambient.setType(handler.getType());
+				ambient.setCapacity(Double.parseDouble(handler.getCapacity()));
 				this.ambients.add(ambient);
+				System.out.println("AMBIENT " + ambient.getType() + " - " + ambient.getCapacity());
 			}
 			ambient.getDevices().add(device);
 		} catch (ParserConfigurationException | SAXException | IOException e) {
@@ -192,19 +205,46 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 		this.dispatcher.addMessageToQueue(message);
 	}
 
-	@SuppressWarnings("unchecked")
-	public String proccessCPSGraph(String json) {
+	public String proccessRequisition(String json) {
 		Requisition requisition = new Requisition();
-		/* Não esquecer de pegar os edges para fazer o graph matching */
-		// File file = new File("./graph.txt");
+		String status = null;
 		try {
-			// String content = FileUtils.readFileToString(file, "utf-8");
 			String content = json;
 			JSONObject graphJson = new JSONObject(content);
-			JSONObject graphs = (JSONObject) graphJson.opt("environments");
+			requisition.setType(graphJson.getString("type"));
+			if (requisition.getType().equals("ResourcesList")) {
+				status = this.proccessGraph((JSONObject) graphJson.opt("environments"));
+			} else {
+				// Pegar os ids dos gráficos para serem executados.
+				this.executeRequisition(requisition);
+				status = getJsonAnswer(requisition);
+			}
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		return status;
+	}
 
+	private void executeRequisition(Requisition requisition) {
+		String message = null;
+		for (Graph graph : requisition.getGraphs()) {
+			for (String senderId : graph.getMappedFunctions().keySet()) {
+				for (Functionality functionality : graph.getMappedFunctions().get(senderId)) {
+					message = functionality.getDescription() + ";" + functionality.getQueuedCommand();
+					this.sendMessage(UUID.fromString(senderId), UUID.fromString(this.gatewayIP), message);
+					System.out.println("MSG = " + message);
+				}
+			}
+		}
+		requisition.unlock();
+		this.requisitions.remove(requisition);
+	}
+
+	@SuppressWarnings("unchecked")
+	private String proccessGraph(JSONObject graphs) {
+		Requisition requisition = new Requisition();
+		try {
 			requisition.setId("req-test-01");
-
 			Iterator<String> itGraph = graphs.keys();
 			Iterator<String> itAmbient = null;
 			Iterator<String> itNodes = null;
@@ -216,9 +256,6 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 				JSONObject ambient = graphs.getJSONObject(idAmb);
 				itAmbient = ambient.keys();
 				while (itAmbient.hasNext()) {
-					/*
-					 * Aqui eu consigo pegar os nodes e edges
-					 */
 					String idNod = itAmbient.next();
 					if (idNod.equals("type")) {
 						graph.setType(ambient.getString(idNod));
@@ -227,10 +264,6 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 						graph.setCapacity(ambient.getString(idNod));
 					}
 					if (idNod.equals("nodes")) {
-						/*
-						 * Verificar aqui se o ambientReal tem os dispositivos
-						 * com as funcionalidades desejadas
-						 */
 						JSONObject node = ambient.getJSONObject(idNod);
 						itNodes = node.keys();
 						while (itNodes.hasNext()) {
@@ -238,25 +271,28 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 							JSONObject device = node.getJSONObject(idDev);
 							Functionality functionality = new Functionality();
 							functionality.setDescription(device.getString("class"));
+							String command = device.getString("property");
+							functionality.setQueuedCommand(command);
 							graph.getBookedFunctions().add(functionality);
-							/*
-							 * descobrir os keys e depois fazer if caso os keys
-							 * existam
-							 */
 						}
 					}
 				}
+				System.out.println("-------------------------------------------------------------------------> " + graph.getId());
 				if (this.matchRequisition(graph)) {
+					System.out.println("-------------------------------------------------------------------------> MATCH!");
 					graph.lock();
 					requisition.getGraphs().add(graph);
 				}
 			}
+
 			if (requisition.getGraphs().size() >= 1)
 				this.requisitions.add(requisition);
 
 			System.out.println("*****************************");
 			System.out.println("ANSWER IS " + getJsonAnswer(requisition));
 			System.out.println("*****************************");
+			// this.executeRequisition(requisition);
+
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
@@ -264,14 +300,22 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 	}
 
 	public boolean matchRequisition(Graph graph) {
-		ArrayList<Functionality> functionsToLock = new ArrayList<Functionality>();
+		System.out.println("-------------------------------------------------------------------------> ENTREI!");
+		Map<String, Set<Functionality>> mappedFunctions = new HashMap<String, Set<Functionality>>();
 		Boolean match = true;
+		System.out.println("------------------------------------------------------------------------->"+this.ambients.size());
 		if (this.ambients.size() == 0)
 			match = false;
-		for (Ambient ambient : this.ambients) {
-			if (ambient.getType().equals(graph.getType())) {
+		Iterator<Ambient> ambIt = this.ambients.iterator();
+		//for (Ambient ambient : this.ambients) {
+		while (ambIt.hasNext()) {
+			Ambient ambient = ambIt.next();
+			System.out.println("------------------------------------------------------------------------->"+ambient.getDescription());
+			if (ambient.getType().equals(graph.getType())
+					&& ambient.getCapacity() <= Double.parseDouble(graph.getCapacity())) {
 				for (Functionality function : graph.getBookedFunctions()) {
 					for (Device device : ambient.getDevices()) {
+						System.out.println("------------------------------------------------------------------------->"+device.getDescription());
 						Functionality functionReal = device.findFunctionality(function.getDescription());
 						if (functionReal == null) {
 							match = false;
@@ -279,7 +323,17 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 							if (functionReal.isBusy()) {
 								match = false;
 							} else {
-								functionsToLock.add(functionReal);
+								System.out.println("-------------------------------------------------------------------------> "+ functionReal.getDescription());
+								functionReal.setQueuedCommand(function.getQueuedCommand());
+								if (mappedFunctions.containsKey(device.getId())) {
+									Set<Functionality> functionalities = mappedFunctions.get(device.getId());
+									functionalities.add(functionReal);
+									mappedFunctions.put(device.getId(), functionalities);
+								} else {
+									Set<Functionality> functionalities = new HashSet<Functionality>();
+									functionalities.add(functionReal);
+									mappedFunctions.put(device.getId(), functionalities);
+								}
 							}
 						}
 					}
@@ -287,14 +341,16 @@ public class VirtualThingCore implements UDIDataReaderListener<ApplicationObject
 			} else {
 				match = false;
 			}
-			if (!match)
-				functionsToLock.clear();
-			else {
-				graph.setBookedFunctions(functionsToLock);
+			System.out.println("-------------------------------------------------------------------------> END MATCH: " + match);
+			if (!match && ambIt.hasNext()) {
+				mappedFunctions.clear();
+				match = true;
+			} else {
+				graph.setMappedFunctions(mappedFunctions);
 				break;
 			}
-		}
-		return match;
+		}				
+		return match;		
 	}
 
 	private String getJsonAnswer(Requisition r) {

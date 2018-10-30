@@ -17,21 +17,17 @@ import javax.xml.parsers.SAXParserFactory;
 
 import org.xml.sax.SAXException;
 
-import dispatcher.publishing.Ambient;
 import dispatcher.publishing.Device;
-import dispatcher.publishing.Functionality;
+
 import lac.cnclib.net.NodeConnection;
 import lac.cnclib.net.NodeConnectionListener;
 import lac.cnclib.net.mrudp.MrUdpNodeConnection;
 import lac.cnclib.sddl.message.ApplicationMessage;
 import lac.cnclib.sddl.message.Message;
 import lac.cnclib.sddl.serialization.Serialization;
-import lac.cnet.sddl.objects.ApplicationObject;
-import lac.cnet.sddl.udi.core.UniversalDDSLayerFactory.SupportedDDSVendors;
 import xmlHandler.FileHandler;
 
 public class EmbeddedClient implements NodeConnectionListener {
-
 	private static String gatewayIP = "127.0.0.1";
 	private static int gatewayPort = 5500;
 	private MrUdpNodeConnection connection;
@@ -41,7 +37,7 @@ public class EmbeddedClient implements NodeConnectionListener {
 	private boolean registered = false;
 	private boolean mounted = false;
 	private Queue<Action> actions = new LinkedList<Action>();
-	private String fileAddress = "/Pantoja/WORKSPACE/PANTOJACHANNEL/STaaS/src/client/config.xml";
+	private String fileAddress = "./src/client/config.xml";
 
 	public boolean isRegistered() {
 		return registered;
@@ -68,7 +64,7 @@ public class EmbeddedClient implements NodeConnectionListener {
 		this.mountDevice();
 		InetSocketAddress address = new InetSocketAddress(gatewayIP, gatewayPort);
 		try {
-			myUUID = UUID.fromString("bb103877-8335-444a-be5f-db8d916f6758");
+			myUUID = UUID.fromString(this.device.getId());
 			connection = new MrUdpNodeConnection(myUUID);
 			connection.addNodeConnectionListener(this);
 			connection.connect(address);
@@ -81,12 +77,13 @@ public class EmbeddedClient implements NodeConnectionListener {
 	public void connected(NodeConnection remoteCon) {
 		if (this.mounted) {
 			Message message = new ApplicationMessage();
-			File xml = new File(this.fileAddress);
-			message.setContentObject(xml);
 			//Device temp = new Device();
 			//temp = (Device) message.getContentObject();
 			//message.setContentObject("XML");
 			try {
+				String address = new File(this.fileAddress).getCanonicalPath();
+				File xml = new File(address);
+				message.setContentObject(xml);
 				connection.sendMessage(message);
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -104,9 +101,9 @@ public class EmbeddedClient implements NodeConnectionListener {
 			if (this.registered == true) {
 				Action action = new Action();
 				String info[] = msg.split(";");
-				action.setDevice(info[0]);
-				action.setFunction(info[1]);
-				action.setCommand(info[2]);
+				action.setDevice(this.device.getDescription());
+				action.setFunction(info[0]);
+				action.setCommand(info[1]);
 				this.actions.add(action);
 				System.out.println("[ST]: This device received a new action!");
 			}

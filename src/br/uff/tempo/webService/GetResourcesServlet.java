@@ -1,7 +1,9 @@
 package br.uff.tempo.webService;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.List;
@@ -46,6 +48,14 @@ public class GetResourcesServlet extends HttpServlet implements NodeConnectionLi
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
+		/* Getting the json file  
+		BufferedReader br = new BufferedReader(new InputStreamReader(request.getInputStream()));
+		String json = "";
+		if (br != null) {
+			json = br.readLine();
+		}
+		*/
+		
 		File file = new File("./graph.txt");
 		String content = FileUtils.readFileToString(file, "utf-8");
 		this.sendMessage(content);

@@ -1,12 +1,14 @@
 package br.uff.tempo.client;
 
+import java.util.ArrayList;
 import java.util.Random;
-
+import br.pro.turing.javino.Javino;
 import dispatcher.publishing.Functionality;
 
 public class Cycle implements Runnable {
 
 	private EmbeddedClient client = new EmbeddedClient();
+	private Javino jBridge = new Javino("C:\\Python27");
 
 	public void run() {
 		while (true) {
@@ -21,11 +23,21 @@ public class Cycle implements Runnable {
 		}
 	}
 
+	private String gatherData(){
+		String perceptions = "";
+		ArrayList<String> availablePorts = new ArrayList<String>();
+		for (Functionality functionalities: this.client.getDevice().getFunctionalities()) {
+			if(!availablePorts.contains(functionalities.getPort()))
+				availablePorts.add(functionalities.getPort());			
+		}
+		for (String port : availablePorts) {
+			if (this.jBridge.requestData(port, "getPerceptions"))
+				perceptions += this.jBridge.getData();
+		}
+		return perceptions;
+	}
+	
 	private void sendData() {
-		/*
-		 * A instância do Javino vai estar aqui para todas as portas seriais
-		 * possíveis.
-		 */
 		Random rand = new Random();
 		Integer n1 = rand.nextInt(50) + 1;
 		Integer n2 = rand.nextInt(2);
@@ -51,7 +63,7 @@ public class Cycle implements Runnable {
 			Action action = this.client.getActions().poll();
 			if (action.getDevice().equals(this.client.getDevice().getDescription())) {
 				Functionality functionality = this.client.getDevice().findFunctionality(action.getFunction());
-				this.executeAction(action.getCommand(), functionality.getDescription());
+				this.executeAction(action.getCommand(), functionality.getPort());
 			}
 		} else
 			System.out.println("[ST]: I don't have any action to execute!");
@@ -60,6 +72,7 @@ public class Cycle implements Runnable {
 
 	private void executeAction(String command, String serialPort) {
 		System.out.println("[ST]: Executing the command '" + command + "'");
+		this.jBridge.sendCommand(serialPort, command);
 	}
 
 }

@@ -12,9 +12,19 @@ public class FileHandler extends DefaultHandler {
 	private Functionality func = null;
 	private Device device = null;
 	private String ambient = null;
+	private String capacity = null;
+	private String type = null;
 	boolean bDescription = false;
 	boolean bCommand = false;
 	
+	public String getType() {
+		return this.type;
+	}
+
+	public String getCapacity() {
+		return this.capacity;
+	}
+
 	public Device getDevice() {
 		return this.device;
 	}
@@ -33,7 +43,9 @@ public class FileHandler extends DefaultHandler {
 			this.device = new Device();
 			this.device.setId(attributes.getValue("id"));
 			this.ambient = attributes.getValue("ambient");
+			this.type = attributes.getValue("type");
 			this.device.setDescription(attributes.getValue("description"));
+			this.capacity = attributes.getValue("capacity");
 		} else if (qName.equalsIgnoreCase("functionality")) {
 			this.func = new Functionality();
 			this.func.setPort(attributes.getValue("port"));

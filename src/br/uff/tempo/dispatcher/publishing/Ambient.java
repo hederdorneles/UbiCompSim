@@ -8,6 +8,7 @@ public class Ambient {
 	private int id = 0;
 	private String description = new String();
 	private String type = new String();
+	private double capacity = 0;
 	private ArrayList<Device> devices = new ArrayList<Device>();
 
 	public int getId() {
@@ -32,6 +33,14 @@ public class Ambient {
 
 	public void setType(String type) {
 		this.type = type;
+	}
+
+	public double getCapacity() {
+		return capacity;
+	}
+
+	public void setCapacity(double capacity) {
+		this.capacity = capacity;
 	}
 
 	public ArrayList<Device> getDevices() {

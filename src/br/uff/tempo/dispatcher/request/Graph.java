@@ -1,16 +1,19 @@
 package br.uff.tempo.dispatcher.request;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 import dispatcher.publishing.Functionality;
 
 public class Graph {
 	private String id = null;
 	private String type = null;
 	private String capacity = null;
-	/* fazer um mapping de device e funcionalidade para executar as ações.
-	 * Para isso, modificar o ArrayList para um Map. */  
-	private ArrayList<Functionality> bookedFunctions = new ArrayList<>();	
-	
+	private ArrayList<Functionality> bookedFunctions = new ArrayList<>();
+	Map<String, Set<Functionality>> mappedFunctions = new HashMap<String, Set<Functionality>>();
+
 	public String getId() {
 		return id;
 	}
@@ -43,19 +46,29 @@ public class Graph {
 		this.bookedFunctions = bookedFunctions;
 	}
 
+	public Map<String, Set<Functionality>> getMappedFunctions() {
+		return mappedFunctions;
+	}
+
+	public void setMappedFunctions(Map<String, Set<Functionality>> mappedFunctions) {
+		this.mappedFunctions = mappedFunctions;
+	}
+
 	public void lock() {
-		for (Functionality function : this.bookedFunctions) {
-			function.setBusy(true);
+		for (String id : this.mappedFunctions.keySet()) {
+			Set<Functionality> function = this.mappedFunctions.get(id);
+			for (Functionality f : function)
+				f.setBusy(true);
 		}
 	}
 
 	public void unlock() {
-		for (Functionality function : this.bookedFunctions) {
-			function.setBusy(false);
+		for (String id : this.mappedFunctions.keySet()) {
+			Set<Functionality> function = this.mappedFunctions.get(id);
+			for (Functionality f : function) {
+				f.setBusy(false);
+				f.setQueuedCommand(null);
+			}
 		}
-	}
-
-	public void execute() {
-
 	}
 }

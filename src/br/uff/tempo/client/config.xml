@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<device id="bb103877-8335-444a-be5f-db8d916f6758" ambient="room" type="classroom" description="ST_001">
+<device id="bb103877-8335-444a-be5f-db8d916f6750" ambient="room" type="room" description="ST_001" capacity="50">
 	<functionality>
 		<description>temperature</description>
 	</functionality>

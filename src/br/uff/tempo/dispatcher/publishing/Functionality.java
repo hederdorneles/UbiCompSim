@@ -9,7 +9,8 @@ public class Functionality {
 	private String description = new String();
 	private String port = "COM1";
 	private ArrayList<String> commands = new ArrayList<String>();
-
+	private String queuedCommand = null; 
+	
 	public Functionality() {
 
 	}
@@ -52,6 +53,14 @@ public class Functionality {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public String getQueuedCommand() {
+		return queuedCommand;
+	}
+
+	public void setQueuedCommand(String queueCommand) {
+		this.queuedCommand = queueCommand;
 	}
 
 }

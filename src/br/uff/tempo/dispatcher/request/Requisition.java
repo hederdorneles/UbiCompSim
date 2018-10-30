@@ -6,6 +6,7 @@ import dispatcher.publishing.Functionality;
 public class Requisition {
 
 	private String id = null;
+	private String type = null;
 	private ArrayList<Graph> graphs = new ArrayList<Graph>();
 
 	public String getId() {
@@ -14,6 +15,14 @@ public class Requisition {
 
 	public void setId(String id) {
 		this.id = id;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
 	}
 
 	public ArrayList<Graph> getGraphs() {
@@ -35,11 +44,7 @@ public class Requisition {
 
 	}
 
-	private void execute() {
-
-	}
-
-	private void unlock() {
+	public void unlock() {
 		for (Graph graph : this.graphs)
 			graph.unlock();
 	}
