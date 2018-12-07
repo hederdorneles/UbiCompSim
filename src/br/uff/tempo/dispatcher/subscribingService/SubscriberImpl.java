@@ -17,7 +17,7 @@ public class SubscriberImpl extends Subscriber implements Runnable {
 	public void run() {
 		while (true) {
 			this.printMessages();
-			this.sleep(1000);
+			this.sleep(2000);
 		}
 	}
 	

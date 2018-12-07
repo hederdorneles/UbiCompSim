@@ -5,7 +5,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 import dispatcher.publishing.Device;
-import dispatcher.publishing.Functionality;
+import dispatcher.publishing.Resource;
 
 public class FileHandler extends DefaultHandler {
 

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -16,14 +17,15 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.xml.sax.SAXException;
 
-import dispatcher.publishing.Ambient;
+import dispatcher.publishing.Environment;
 import dispatcher.publishing.Data;
 import dispatcher.publishing.Device;
-import dispatcher.publishing.Functionality;
+import dispatcher.publishing.Resource;
 import dispatcher.request.Graph;
 import dispatcher.request.Requisition;
 import dispatcher.subscribingService.Dispatcher;
@@ -36,7 +38,7 @@ import lac.cnet.sddl.objects.PrivateMessage;
 import lac.cnet.sddl.udi.core.SddlLayer;
 import lac.cnet.sddl.udi.core.UniversalDDSLayerFactory;
 import lac.cnet.sddl.udi.core.listener.UDIDataReaderListener;
-import webService.ResourceWebServer;
+import webService.RMLWebServer;
 import xmlHandler.FileHandler;
 
 public class ResourceManagement implements UDIDataReaderListener<ApplicationObject> {
@@ -46,7 +48,7 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 	private ArrayList<Environment> ambients = new ArrayList<Environment>();
 	private Environment current = null;
 	private Dispatcher dispatcher = new Dispatcher();
-	private ResourceWebServer webService = new ResourceWebServer();
+	private RMLWebServer webService = new RMLWebServer();
 
 	public static void main(String[] args) {
 		Logger.getLogger("").setLevel(Level.OFF);
@@ -104,8 +106,15 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 			if (message.getSenderId().toString().equals("ff000000-0000-0000-0000-000000000000")) {
 				this.sendMessage(message.getSenderId(), message.getGatewayId(), this.proccessRequisition(data));
 			} else {
-				this.extractMessage(data, message.getSenderId().toString());
-				//this.sendMessage(message.getSenderId(), message.getGatewayId(), "lights;turnOn");
+				if (message.getSenderId().toString().equals("ee000000-0000-0000-0000-000000000000")) {
+					try {
+						this.sendMessage(message.getSenderId(), message.getGatewayId(), this.executeRequisition(data));
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				} else {
+					this.extractMessage(data, message.getSenderId().toString());
+				}
 			}
 		}
 		/*
@@ -114,7 +123,8 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 		 */
 
 		for (Environment amb : this.ambients) {
-			System.out.println("AMBIENT: " + amb.getDescription() + " - " + amb.getType());
+			System.out
+					.println("AMBIENT: " + amb.getDescription() + " - " + amb.getType() + " - [" + amb.isBusy() + "]");
 			System.out.println("--------------------------------------------------");
 			if (amb != null) {
 				amb.printDeviceList();
@@ -130,11 +140,11 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 		this.current = this.findAmbient(functionalities[0]);
 		if (this.current == null) {
 			this.current = new Environment();
-			System.out.println("[STaaS]: The Ambient is not Registered Yet!");
+			System.out.println("[RML]: The Ambient is not Registered Yet!");
 		} else {
 			Device tempDevice = this.current.findDevice(sender);
 			if (tempDevice == null)
-				System.out.println("[STaaS]: The Device is not Registered Yet!");
+				System.out.println("[RML]: The Device is not Registered Yet!");
 			else {
 				for (int cont = 1; cont <= functionalities.length - 1; cont++) {
 					Resource functionality = tempDevice.findFunctionality(functionalities[cont]);
@@ -164,7 +174,6 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 				ambient.setType(handler.getType());
 				ambient.setCapacity(Double.parseDouble(handler.getCapacity()));
 				this.ambients.add(ambient);
-				System.out.println("AMBIENT " + ambient.getType() + " - " + ambient.getCapacity());
 			}
 			ambient.getDevices().add(device);
 		} catch (ParserConfigurationException | SAXException | IOException e) {
@@ -183,9 +192,26 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 
 	public Environment findAmbientByType(String type) {
 		for (Environment ambient : this.ambients) {
-			if (ambient.getType().equals(type)) {
+			if (ambient.getType().equals(type))
 				return ambient;
+		}
+		return null;
+	}
+
+	private Requisition findRequisition(String graphId) {
+		for (Requisition requisition : this.requisitions) {
+			for (Graph graph : requisition.getGraphs()) {
+				if (graph.getId().equals(graphId))
+					return requisition;
 			}
+		}
+		return null;
+	}
+
+	private Requisition findRequisition(Integer id) {
+		for (Requisition requisition : this.requisitions) {
+			if (requisition.getId().equals(id))
+				return requisition;
 		}
 		return null;
 	}
@@ -206,92 +232,107 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 	}
 
 	public String proccessRequisition(String json) {
-		Requisition requisition = new Requisition();
 		String status = null;
 		try {
 			String content = json;
 			JSONObject graphJson = new JSONObject(content);
-			requisition.setType(graphJson.getString("type"));
-			if (requisition.getType().equals("ResourcesList")) {
-				status = this.proccessGraph((JSONObject) graphJson.opt("environments"));
-			} else {
-				// Pegar os ids dos gráficos para serem executados.
-				this.executeRequisition(requisition);
-				status = getJsonAnswer(requisition);
-			}
+			JSONArray environments = graphJson.getJSONArray("environments");
+			status = this.proccessGraph(environments);
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
 		return status;
 	}
 
-	private void executeRequisition(Requisition requisition) {
-		String message = null;
-		for (Graph graph : requisition.getGraphs()) {
-			for (String senderId : graph.getMappedFunctions().keySet()) {
-				for (Resource functionality : graph.getMappedFunctions().get(senderId)) {
-					message = functionality.getDescription() + ";" + functionality.getQueuedCommand();
-					this.sendMessage(UUID.fromString(senderId), UUID.fromString(this.gatewayIP), message);
-					System.out.println("MSG = " + message);
-				}
-			}
+	private String executeRequisition(String json) throws Exception {
+		String idReq = null;
+		JSONArray idJson = new JSONArray(json);
+		ArrayList<String> idArray = new ArrayList<String>();
+		for (int index = 0; index <= idJson.length() - 1; index++) {
+			idArray.add(idJson.getString(index));
 		}
-		requisition.unlock();
-		this.requisitions.remove(requisition);
-	}
 
-	@SuppressWarnings("unchecked")
-	private String proccessGraph(JSONObject graphs) {
-		Requisition requisition = new Requisition();
-		try {
-			requisition.setId("req-test-01");
-			Iterator<String> itGraph = graphs.keys();
-			Iterator<String> itAmbient = null;
-			Iterator<String> itNodes = null;
+		if (idJson.getString(0).equals("release")) {
+			for (Requisition requisition : this.requisitions) {
+				requisition.unlock();
+			}
+			this.requisitions.clear();
+		} else {
 
-			while (itGraph.hasNext()) {
-				String idAmb = itGraph.next();
-				Graph graph = new Graph();
-				graph.setId(idAmb);
-				JSONObject ambient = graphs.getJSONObject(idAmb);
-				itAmbient = ambient.keys();
-				while (itAmbient.hasNext()) {
-					String idNod = itAmbient.next();
-					if (idNod.equals("type")) {
-						graph.setType(ambient.getString(idNod));
-					}
-					if (idNod.equals("capacity")) {
-						graph.setCapacity(ambient.getString(idNod));
-					}
-					if (idNod.equals("nodes")) {
-						JSONObject node = ambient.getJSONObject(idNod);
-						itNodes = node.keys();
-						while (itNodes.hasNext()) {
-							String idDev = itNodes.next();
-							JSONObject device = node.getJSONObject(idDev);
-							Resource functionality = new Resource();
-							functionality.setDescription(device.getString("class"));
-							String command = device.getString("property");
-							functionality.setQueuedCommand(command);
-							graph.getBookedFunctions().add(functionality);
+			if (idArray.size() > 0) {
+				Requisition requisition = this.findRequisition(idArray.get(0));
+				if (requisition != null) {
+					for (int counter = 0; counter <= requisition.getGraphs().size() - 1; counter++) {
+						Graph graph = requisition.getGraphs().get(counter);
+						Boolean found = false;
+						for (String id : idArray) {
+							if (graph.getId().equals(id)) {
+								this.lowLevelExecution(graph);
+								found = true;
+							} // else {
+								// graph.unlock();
+								// requisition.getGraphs().remove(graph);
+								// counter--;
+								// }
+						}
+						if (!found) {
+							graph.unlock();
+							requisition.getGraphs().remove(graph);
+							counter--;
 						}
 					}
 				}
-				System.out.println("-------------------------------------------------------------------------> " + graph.getId());
+			}
+		}
+		return "ready to execute";
+	}
+
+	private void lowLevelExecution(Graph graph) {
+		/*
+		 * Comando para executar todas as ações no hardware! String message =
+		 * null; for (Graph graph : requisition.getGraphs()) { for (String
+		 * senderId : graph.getMappedFunctions().keySet()) { for (Resource
+		 * functionality : graph.getMappedFunctions().get(senderId)) { message =
+		 * functionality.getDescription() + ";" +
+		 * functionality.getQueuedCommand();
+		 * this.sendMessage(UUID.fromString(senderId),
+		 * UUID.fromString(this.gatewayIP), message); } } }
+		 * requisition.unlock(); this.requisitions.remove(requisition);
+		 */
+	}
+
+	private String proccessGraph(JSONArray environments) {
+		Requisition requisition = new Requisition();
+		Random rand = new Random();
+		Integer id = rand.nextInt(10000) + 1;
+		requisition.setId(id.toString());
+		try {
+			for (int countAmb = 0; countAmb < environments.length(); countAmb++) {
+				JSONObject ambient = environments.getJSONObject(countAmb);
+				Graph graph = new Graph();
+				graph.setId(ambient.getString("name"));
+				graph.setCapacity(Integer.toString(ambient.getInt("capacity")));
+				graph.setType("room");
+				JSONArray resources = ambient.getJSONArray("resources");
+				for (int countResource = 0; countResource < resources.length(); countResource++) {
+					JSONObject device = resources.getJSONObject(countResource);
+					Resource resource = new Resource();
+					resource.setDescription(device.getString("class"));
+					// resource.setQueuedCommand(device.getString("property"));
+					graph.getBookedFunctions().add(resource);
+				}
 				if (this.matchRequisition(graph)) {
-					System.out.println("-------------------------------------------------------------------------> MATCH!");
+					graph.setEnvironment(this.findAmbient(graph.getName()));
 					graph.lock();
 					requisition.getGraphs().add(graph);
 				}
 			}
-
 			if (requisition.getGraphs().size() >= 1)
 				this.requisitions.add(requisition);
 
 			System.out.println("*****************************");
 			System.out.println("ANSWER IS " + getJsonAnswer(requisition));
 			System.out.println("*****************************");
-			// this.executeRequisition(requisition);
 
 		} catch (JSONException e) {
 			e.printStackTrace();
@@ -300,22 +341,17 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 	}
 
 	public boolean matchRequisition(Graph graph) {
-		System.out.println("-------------------------------------------------------------------------> ENTREI!");
 		Map<String, Set<Resource>> mappedFunctions = new HashMap<String, Set<Resource>>();
 		Boolean match = true;
-		System.out.println("------------------------------------------------------------------------->"+this.ambients.size());
 		if (this.ambients.size() == 0)
 			match = false;
 		Iterator<Environment> ambIt = this.ambients.iterator();
-		//for (Ambient ambient : this.ambients) {
 		while (ambIt.hasNext()) {
 			Environment ambient = ambIt.next();
-			System.out.println("------------------------------------------------------------------------->"+ambient.getDescription());
-			if (ambient.getType().equals(graph.getType())
-					&& ambient.getCapacity() <= Double.parseDouble(graph.getCapacity())) {
+			if (ambient.getType().equals(graph.getType()) && !ambient.isBusy()
+					&& ambient.getCapacity() >= Double.parseDouble(graph.getCapacity())) {
 				for (Resource function : graph.getBookedFunctions()) {
 					for (Device device : ambient.getDevices()) {
-						System.out.println("------------------------------------------------------------------------->"+device.getDescription());
 						Resource functionReal = device.findFunctionality(function.getDescription());
 						if (functionReal == null) {
 							match = false;
@@ -323,7 +359,7 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 							if (functionReal.isBusy()) {
 								match = false;
 							} else {
-								System.out.println("-------------------------------------------------------------------------> "+ functionReal.getDescription());
+								graph.setName(ambient.getDescription());
 								functionReal.setQueuedCommand(function.getQueuedCommand());
 								if (mappedFunctions.containsKey(device.getId())) {
 									Set<Resource> functionalities = mappedFunctions.get(device.getId());
@@ -341,7 +377,9 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 			} else {
 				match = false;
 			}
-			System.out.println("-------------------------------------------------------------------------> END MATCH: " + match);
+			// System.out.println(
+			// "------------------------------------------------------------------------->
+			// END MATCH: " + match);
 			if (!match && ambIt.hasNext()) {
 				mappedFunctions.clear();
 				match = true;
@@ -349,21 +387,21 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 				graph.setMappedFunctions(mappedFunctions);
 				break;
 			}
-		}				
-		return match;		
+		}
+		return match;
 	}
 
 	private String getJsonAnswer(Requisition r) {
-		String answer = "{" + r.getId() + ":[";
+		String answer = "[";
 		int cont = 0;
 		for (Graph g : r.getGraphs()) {
 			cont++;
 			if (cont == 1)
-				answer += g.getId();
+				answer += "\"" + g.getId() + "\"";
 			else
-				answer += "," + g.getId();
+				answer += ",\"" + g.getId() + "\"";
 		}
-		answer += "]}";
+		answer += "]";
 		return answer;
 	}
 }

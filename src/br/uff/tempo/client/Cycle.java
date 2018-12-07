@@ -3,7 +3,7 @@ package br.uff.tempo.client;
 import java.util.ArrayList;
 import java.util.Random;
 import br.pro.turing.javino.Javino;
-import dispatcher.publishing.Functionality;
+import dispatcher.publishing.Resource;
 
 public class Cycle implements Runnable {
 

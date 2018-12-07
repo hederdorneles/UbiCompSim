@@ -1,7 +1,7 @@
 package br.uff.tempo.dispatcher.request;
 
 import java.util.ArrayList;
-import dispatcher.publishing.Functionality;
+import dispatcher.publishing.Resource;
 
 public class Requisition {
 

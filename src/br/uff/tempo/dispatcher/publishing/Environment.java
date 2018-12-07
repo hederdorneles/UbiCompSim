@@ -10,6 +10,7 @@ public class Environment {
 	private String type = new String();
 	private double capacity = 0;
 	private ArrayList<Device> devices = new ArrayList<Device>();
+	private boolean isBusy = false;
 
 	public int getId() {
 		return id;
@@ -51,6 +52,18 @@ public class Environment {
 		this.devices = devices;
 	}
 
+	public boolean isBusy() {
+		return isBusy;
+	}
+
+	public void lock() {
+		this.isBusy = true;
+	}
+
+	public void unlock() {
+		this.isBusy = false;
+	}
+	
 	public void availableResources() {
 		// return a graph
 	}
@@ -84,5 +97,4 @@ public class Environment {
 			System.out.println(" ");
 		}
 	}
-
 }

@@ -5,12 +5,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import dispatcher.publishing.Functionality;
+import dispatcher.publishing.Environment;
+import dispatcher.publishing.Resource;
 
 public class Graph {
 	private String id = null;
+	private String name = null;
 	private String type = null;
 	private String capacity = null;
+	private Environment environment = null;
 	private ArrayList<Resource> bookedFunctions = new ArrayList<>();
 	Map<String, Set<Resource>> mappedFunctions = new HashMap<String, Set<Resource>>();
 
@@ -54,7 +57,19 @@ public class Graph {
 		this.mappedFunctions = mappedFunctions;
 	}
 
+	public Environment getEnvironment() {
+		return environment;
+	}
+
+	public void setEnvironment(Environment environment) {
+		this.environment = environment;
+	}
+
 	public void lock() {
+		if (this.environment != null)
+			this.environment.lock();
+		else
+			System.out.println("[RML]: The environment is Null!");
 		for (String id : this.mappedFunctions.keySet()) {
 			Set<Resource> function = this.mappedFunctions.get(id);
 			for (Resource f : function)
@@ -63,6 +78,7 @@ public class Graph {
 	}
 
 	public void unlock() {
+		this.environment.unlock();
 		for (String id : this.mappedFunctions.keySet()) {
 			Set<Resource> function = this.mappedFunctions.get(id);
 			for (Resource f : function) {
@@ -71,4 +87,13 @@ public class Graph {
 			}
 		}
 	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
 }

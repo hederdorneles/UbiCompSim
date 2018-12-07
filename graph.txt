@@ -1,0 +1,30 @@
+{ "environments": [
+    {
+      "name": "env-0",
+      "capacity": 27,
+      "resources": [
+        {
+          "name": "d0",
+          "class": "lights",
+          "property": "ON"
+        }
+      ]
+    },
+    {
+      "name": "env-1",
+      "capacity": 50,
+      "resources": [
+        {
+          "name": "d0",
+          "class": "lights",
+          "property": "ON"
+        },
+        {
+          "name": "d1",
+          "class": "temperature",
+          "property": "ON"
+        }
+      ]
+    }
+  ]
+}

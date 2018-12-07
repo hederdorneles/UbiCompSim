@@ -14,11 +14,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import com.google.gson.JsonParser;
 
 import lac.cnclib.net.NodeConnection;
 import lac.cnclib.net.NodeConnectionListener;
@@ -27,7 +24,7 @@ import lac.cnclib.sddl.message.ApplicationMessage;
 import lac.cnclib.sddl.message.Message;
 import lac.cnclib.sddl.serialization.Serialization;
 
-public class GetResourcesServlet extends HttpServlet implements NodeConnectionListener {
+public class ExecutionServlet extends HttpServlet implements NodeConnectionListener {
 
 	private static final long serialVersionUID = 1L;
 	private static String gatewayIP = "127.0.0.1";
@@ -36,11 +33,11 @@ public class GetResourcesServlet extends HttpServlet implements NodeConnectionLi
 	private UUID myUUID;
 	private String message = null;
 
-	public GetResourcesServlet() {
+	public ExecutionServlet() {
 		super();
 		InetSocketAddress address = new InetSocketAddress(gatewayIP, gatewayPort);
 		try {
-			this.myUUID = UUID.fromString("ff000000-0000-0000-0000-000000000000");
+			this.myUUID = UUID.fromString("ee000000-0000-0000-0000-000000000000");
 			connection = new MrUdpNodeConnection(myUUID);
 			connection.addNodeConnectionListener(this);
 			connection.connect(address);
@@ -51,15 +48,11 @@ public class GetResourcesServlet extends HttpServlet implements NodeConnectionLi
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-
 		BufferedReader br = new BufferedReader(new InputStreamReader(request.getInputStream()));
 		String json = "";
 		if (br != null) {
 			json = br.readLine();
 		}
-
-		//File file = new File("./graph.txt");
-		//String content = FileUtils.readFileToString(file, "utf-8");
 		String content = json;
 		
 		if (this.isJson(content)) {
@@ -79,6 +72,7 @@ public class GetResourcesServlet extends HttpServlet implements NodeConnectionLi
 			response.getWriter().println("This is not a valid json file! " + json);
 			// response.setStatus(HttpServletResponse.SC_CONFLICT); //409
 		}
+
 	}
 
 	@Override
@@ -130,7 +124,7 @@ public class GetResourcesServlet extends HttpServlet implements NodeConnectionLi
 
 	public boolean isJson(String json) {
 		try {
-			new JSONObject(json);
+			new JSONArray(json);
 		} catch (Exception e) {
 			return false;
 		}
