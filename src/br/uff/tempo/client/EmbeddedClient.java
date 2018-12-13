@@ -28,6 +28,9 @@ import lac.cnclib.sddl.serialization.Serialization;
 import xmlHandler.FileHandler;
 
 public class EmbeddedClient implements NodeConnectionListener {
+	/* 
+	 * Alterar para ser configurável pelo XML (todas)
+	 */
 	private static String gatewayIP = "127.0.0.1";
 	private static int gatewayPort = 5500;
 	private MrUdpNodeConnection connection;

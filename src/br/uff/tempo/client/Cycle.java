@@ -8,11 +8,17 @@ import dispatcher.publishing.Resource;
 public class Cycle implements Runnable {
 
 	private EmbeddedClient client = new EmbeddedClient();
+	/* 
+	 * Alterar para ser configurável pelo XML
+	 */
 	private Javino jBridge = new Javino("C:\\Python27");
 
 	public void run() {
 		while (true) {
 			this.sendData();
+			/* 
+			 * Alterar para ser configurável pelo XML
+			 */
 			this.sleep(2000);
 			/*
 			 * Tem que tomar uma decisão para ver se é melhor executar todas as
