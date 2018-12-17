@@ -2,6 +2,16 @@
 <classpath>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="/home/heder/Documents/contexnet/contextnet-2.7.jar"/>
+	<classpathentry kind="lib" path="C:/OpenSplice/contextnet-2.5.jar"/>
+	<classpathentry kind="lib" path="C:/OpenSplice/javino_stable_1.1.jar"/>
+	<classpathentry kind="lib" path="C:/OpenSplice/java-json.jar"/>
+	<classpathentry kind="lib" path="C:/OpenSplice/jetty-distribution-9.4.12.v20180830/lib/jetty-http-9.4.12.v20180830.jar"/>
+	<classpathentry kind="lib" path="C:/OpenSplice/jetty-distribution-9.4.12.v20180830/lib/jetty-io-9.4.12.v20180830.jar"/>
+	<classpathentry kind="lib" path="C:/OpenSplice/jetty-distribution-9.4.12.v20180830/lib/jetty-server-9.4.12.v20180830.jar"/>
+	<classpathentry kind="lib" path="C:/OpenSplice/jetty-distribution-9.4.12.v20180830/lib/jetty-servlet-9.4.12.v20180830.jar"/>
+	<classpathentry kind="lib" path="C:/OpenSplice/jetty-distribution-9.4.12.v20180830/lib/jetty-servlets-9.4.12.v20180830.jar"/>
+	<classpathentry kind="lib" path="C:/OpenSplice/jetty-distribution-9.4.12.v20180830/lib/servlet-api-3.1.jar"/>
+	<classpathentry kind="lib" path="C:/OpenSplice/jetty-distribution-9.4.12.v20180830/lib/jetty-security-9.4.12.v20180830.jar"/>
+	<classpathentry kind="lib" path="C:/OpenSplice/jetty-distribution-9.4.12.v20180830/lib/jetty-util-9.4.12.v20180830.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

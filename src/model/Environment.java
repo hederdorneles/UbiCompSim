@@ -1,4 +1,4 @@
-package br.uff.tempo.dispatcher.publishing;
+package model;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -87,7 +87,7 @@ public class Environment {
 			System.out.println("--------------------------------------------------");
 			System.out.println("ID: " + ts.getId());
 			System.out.println("DESCRIPTION: " + ts.getDescription());
-			for (Iterator<Resource> iteratorF = ts.getFunctionalities().iterator(); iteratorF.hasNext();) {
+			for (Iterator<Resource> iteratorF = ts.getResources().iterator(); iteratorF.hasNext();) {
 				Resource tf = iteratorF.next();
 				System.out.print("---------> ");
 				if (tf.isBusy())
