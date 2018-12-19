@@ -59,7 +59,7 @@ public class Config implements Serializable {
 
 	@Override
 	public String toString() {
-		return this.port + " com o dispositivo" + this.description;
+		return this.port + " no ambiente " + this.environment;
 	}
 	
 }

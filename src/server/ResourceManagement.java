@@ -91,7 +91,7 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 	public void onNewData(ApplicationObject topicSample) {
 		Message message = (Message) topicSample;
 		String className = Serialization.fromJavaByteStream(message.getContent()).getClass().toString();
-		if (className.equals("class client.Config")) {
+		if (className.equals("class common.Config")) {
 			Config parameters = (Config) Serialization.fromJavaByteStream(message.getContent());
 			this.mountDevice(parameters);
 			this.sendMessage(message.getSenderId(), message.getGatewayId(), "registered");
