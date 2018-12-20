@@ -86,7 +86,7 @@ public class Environment {
 			System.out.println("DEVICE: " + counter);
 			System.out.println("--------------------------------------------------");
 			System.out.println("ID: " + ts.getId());
-			System.out.println("DESCRIPTION: " + ts.getDescription());
+			System.out.println("DESCRIPTION: " + ts.getName());
 			for (Iterator<Resource> iteratorF = ts.getResources().iterator(); iteratorF.hasNext();) {
 				Resource tf = iteratorF.next();
 				System.out.print("---------> ");

@@ -29,17 +29,18 @@ import lac.cnclib.sddl.serialization.Serialization;
 import common.xmlHandler.FileHandler;
 
 public class EmbeddedClient implements NodeConnectionListener {
-	private static String gatewayIP = "127.0.0.1";
-	private static int gatewayPort = 5500;
+	private String gatewayIP = "127.0.0.1";
+	private int gatewayPort = 5500;
 	private MrUdpNodeConnection connection;
 	private UUID myUUID;
 	private String environment = "";
 	private Device device = null;
+	private String sendTime = "1000";
 	private boolean registered = false;
 	private boolean mounted = false;
 	private Queue<Action> actions = new LinkedList<Action>();
 	private String fileAddress = "./src/client/config.xml";
-
+	
 	public boolean isRegistered() {
 		return registered;
 	}
@@ -54,6 +55,14 @@ public class EmbeddedClient implements NodeConnectionListener {
 
 	public Device getDevice() {
 		return device;
+	}
+
+	public String getSendTime() {
+		return sendTime;
+	}
+
+	public void setSendTime(String sendTime) {
+		this.sendTime = sendTime;
 	}
 
 	public static void main(String[] args) {
@@ -80,7 +89,7 @@ public class EmbeddedClient implements NodeConnectionListener {
 			Message message = new ApplicationMessage();
 			Config parameters = new Config();
 			parameters.setResources(this.device.getResources());
-			parameters.setDescription(this.device.getDescription());
+			parameters.setDescription(this.device.getName());
 			parameters.setId(this.myUUID.toString());
 			parameters.setEnvironment(this.environment);
 			try {
@@ -102,7 +111,7 @@ public class EmbeddedClient implements NodeConnectionListener {
 			if (this.registered == true) {
 				Action action = new Action();
 				String info[] = msg.split(";");
-				action.setDevice(this.device.getDescription());
+				action.setDevice(this.device.getName());
 				action.setFunction(info[0]);
 				action.setCommand(info[1]);
 				this.actions.add(action);
@@ -129,25 +138,15 @@ public class EmbeddedClient implements NodeConnectionListener {
 			SAXParser saxParser = saxParserFactory.newSAXParser();
 			FileHandler handler = new FileHandler();
 			saxParser.parse(new File(this.fileAddress), handler);
-			this.environment = handler.getAmbient();
+			this.environment = handler.getEnvironment();
+			this.gatewayIP = handler.getGateway();
+			this.gatewayPort = Integer.parseInt(handler.getPort());
+			this.sendTime = handler.getSendTime();
 			this.device = handler.getDevice();
+			System.out.println(handler.toString());
 			if (this.device != null)
 				this.mounted = true;
-			/*
-			 * Esse código só printa a montagem do xml no Cliente.
-			 * 
-			 * System.out.println(
-			 * "------------------------------------------------------------");
-			 * int cont = 0; for (Functionality f :
-			 * this.device.getFunctionalities()) { cont++; System.out.println(
-			 * "[ST]: Func - " + f.getDescription() + "; Port - " + f.getPort()
-			 * + "; Commands - " + f.getCommands().size()); for (String c :
-			 * f.getCommands()) { System.out.println("-------> " + c); }
-			 * 
-			 * } System.out.println(
-			 * "------------------------------------------------------------");
-			 */
-		} catch (ParserConfigurationException | SAXException | IOException e) {
+				} catch (ParserConfigurationException | SAXException | IOException e) {
 			e.printStackTrace();
 		}
 	}

@@ -8,7 +8,7 @@ public class Device implements Serializable {
 
 	private static final long serialVersionUID = 6093226637618022646L;
 	private String id = new String();
-	private String description = new String();
+	private String name = new String();
 	private ArrayList<Resource> resources = new ArrayList<Resource>();
 	private Environment environment = new Environment();
 
@@ -20,12 +20,12 @@ public class Device implements Serializable {
 		this.id = id;
 	}
 
-	public String getDescription() {
-		return description;
+	public String getName() {
+		return name;
 	}
 
-	public void setDescription(String description) {
-		this.description = description;
+	public void setName(String description) {
+		this.name = description;
 	}
 
 	

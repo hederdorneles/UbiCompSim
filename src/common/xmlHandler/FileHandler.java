@@ -11,47 +11,73 @@ public class FileHandler extends DefaultHandler {
 
 	private Resource resource = null;
 	private Device device = null;
-	private String ambient = null;
-	private String capacity = null;
-	private String type = null;
-	boolean bDescription = false;
+	private String environmentId = null;
+	private String gateway = null;
+	private String port = null;
+	private String sendTime = null;
+	boolean bName = false;
 	boolean bCommand = false;
-	
-	public String getType() {
-		return this.type;
-	}
-
-	public String getCapacity() {
-		return this.capacity;
-	}
+	boolean bGateway = false;
+	boolean bPort = false;
+	boolean bSendTime = false;
+	boolean bId = false;
 
 	public Device getDevice() {
 		return this.device;
 	}
 
-	public String getDeviceDescription() {
-		return this.device.getDescription();
+	public String getDeviceName() {
+		return this.device.getName();
 	}
 
-	public String getAmbient() {
-		return this.ambient;
+	public String getEnvironment() {
+		return this.environmentId;
+	}
+
+	public String getGateway() {
+		return gateway;
+	}
+
+	public void setGateway(String gateway) {
+		this.gateway = gateway;
+	}
+
+	public String getPort() {
+		return port;
+	}
+
+	public void setPort(String port) {
+		this.port = port;
+	}
+
+	public String getSendTime() {
+		return sendTime;
+	}
+
+	public void setSendTime(String sendTime) {
+		this.sendTime = sendTime;
 	}
 
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-		if (qName.equalsIgnoreCase("Device")) {
+		if (qName.equalsIgnoreCase("device")) {
 			this.device = new Device();
 			this.device.setId(attributes.getValue("id"));
-			this.ambient = attributes.getValue("ambient");
-			this.type = attributes.getValue("type");
-			this.device.setDescription(attributes.getValue("description"));
-			this.capacity = attributes.getValue("capacity");
-		} else if (qName.equalsIgnoreCase("functionality")) {
+			this.device.setName(attributes.getValue("name"));
+		} else if (qName.equalsIgnoreCase("gateway")) {
+			this.bGateway = true;
+		} else if (qName.equalsIgnoreCase("port")) {
+			this.bPort = true;
+		} else if (qName.equalsIgnoreCase("sendtime")) {
+			this.bSendTime = true;
+		} else if (qName.equalsIgnoreCase("id")) {
+			this.bId = true;
+		} else if (qName.equalsIgnoreCase("resource")) {
 			this.resource = new Resource();
 			this.resource.setPort(attributes.getValue("port"));
 			this.device.getResources().add(this.resource);
-		} else if (qName.equalsIgnoreCase("description")) {
-			this.bDescription = true;
+		} else if (qName.equalsIgnoreCase("name")) {
+			this.bName = true;
 		} else if (qName.equalsIgnoreCase("command")) {
 			this.bCommand = true;
 		}
@@ -65,14 +91,53 @@ public class FileHandler extends DefaultHandler {
 
 	@Override
 	public void characters(char ch[], int start, int length) throws SAXException {
-		if (this.bDescription) {
+		if (this.bName) {
 			this.resource.setDescription(new String(ch, start, length));
-			this.bDescription = false;
+			this.bName = false;
 		}
 		if (this.bCommand) {
 			this.resource.getCommands().add(new String(ch, start, length));
 			this.bCommand = false;
 		}
-		
+		if (this.bGateway) {
+			this.gateway = new String(ch, start, length);
+			this.bGateway = false;
+		}
+		if (this.bPort) {
+			this.port = new String(ch, start, length);
+			this.bPort = false;
+		}
+		if (this.bSendTime) {
+			this.sendTime = new String(ch, start, length);
+			this.bSendTime = false;
+		}
+		if (this.bId) {
+			this.environmentId = new String(ch, start, length);
+			this.bId = false;
+		}
 	}
+
+	@Override
+	public String toString() {
+		String toString = new String();
+		toString = "---------------------- XML FILE HANDLER ---------------------- \n";
+		toString += " DEVICE: " + this.device.getName() + "\n";
+		toString += " GATEWAY: " + this.gateway + "\n";
+		toString += " PORT: " + this.port + "\n";
+		toString += " ENVIRONMENT ID: " + this.environmentId + "\n";
+		toString += " SEND TIME IN MS: " + this.sendTime + "\n";
+		if (this.device.getResources().size() > 0)
+			toString += " RESOURCES: \n";
+		for (Resource r : this.device.getResources()) {
+			toString += "   ---> " + r.getDescription() + " at " + r.getPort() + "\n";
+			if (r.getCommands().size() > 0)
+				toString += "   COMMANDS: \n";
+			for (String c : r.getCommands()) {
+				toString += "      ---> " + c + "\n";
+			}
+		}
+		toString += "--------------------------------------------------------------";
+		return toString;
+	}
+
 }

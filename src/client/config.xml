@@ -1,15 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<device id="bb103877-8335-444a-be5f-db8d916f6750" ambient="room" type="room" description="ST_001" capacity="50">
-	<functionality>
-		<description>temperature</description>
-	</functionality>
-	<functionality>
-		<description>luminosity</description>
-	</functionality>
-	<functionality port="COM5">
-		<description>lights</description>
+<device id="bb103877-8335-444a-be5f-db8d916f6750" name="ST_001">
+	<configuration>
+		<server>
+			<gateway>127.0.0.1</gateway>
+			<port>5500</port>
+			<sendtime>5000</sendtime>
+		</server>
+		<environment>
+			<id>123456</id>
+		</environment>
+	</configuration>
+	<resource port="COM5">
+		<name>temperature</name>
+		<description>It shows the temperature of an environment in Celsius degree.</description>
+	</resource>
+	<resource port="COM5">
+		<name>luminosity</name>
+		<description>It shows the luminosity of an environment.</description>
+	</resource>
+	<resource port="COM5">
+		<name>lights</name>
+		<description>It controls the lamps of a room.</description>
+		<commands>
 			<command>lightOn</command>
-			<command>tightOff</command>
-	</functionality>
+			<command>lightOff</command>
+		</commands>
+	</resource>
 </device>
-

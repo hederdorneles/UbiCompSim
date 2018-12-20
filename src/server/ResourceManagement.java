@@ -39,7 +39,7 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 	@SuppressWarnings("unused")
 	private String gatewayIP = "127.0.0.1";
 	private ArrayList<Requisition> requisitions = new ArrayList<Requisition>();
-	private ArrayList<Environment> ambients = new ArrayList<Environment>();
+	private ArrayList<Environment> environments = new ArrayList<Environment>();
 	private Environment current = null;
 	private Dispatcher dispatcher = new Dispatcher();
 	private RMLWebServer webService = new RMLWebServer();
@@ -116,7 +116,7 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 		 * mensagem para testar o cliente.
 		 */
 
-		for (Environment amb : this.ambients) {
+		for (Environment amb : this.environments) {
 			System.out
 					.println("AMBIENT: " + amb.getDescription() + " - " + amb.getType() + " - [" + amb.isBusy() + "]");
 			System.out.println("--------------------------------------------------");
@@ -143,7 +143,7 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 				for (int cont = 1; cont <= resources.length - 1; cont++) {
 					Resource resource = tempDevice.findResource(resources[cont]);
 					resource.setValue(Double.parseDouble(resources[cont + 1]));
-					this.sendDataForDispatcher(tempDevice.getDescription(), resources[cont],
+					this.sendDataForDispatcher(tempDevice.getName(), resources[cont],
 							resources[cont + 1]);
 					cont++;
 				}
@@ -155,25 +155,25 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 		Environment environment = this.findAmbient(parameters.getEnvironment());
 		/*
 		 * Aqui vai precisar modificar para não ter mais que enviar a informação
-		 * do ambiente pelo dispositivo. Permitir cadastrar via inerface web.
+		 * do ambiente pelo dispositivo. Permitir cadastrar via interface web.
 		 */
 		if (environment == null) {
 			environment = new Environment();
 			environment.setDescription(parameters.getEnvironment());
 			environment.setType("room");
 			environment.setCapacity(30);
-			this.ambients.add(environment);
+			this.environments.add(environment);
 		}
 		Device device = new Device();
 		device.setEnvironment(environment);
-		device.setDescription(parameters.getDescription());
+		device.setName(parameters.getDescription());
 		device.setResources(parameters.getResources());
 		device.setId(parameters.getId());
 		environment.getDevices().add(device);
 	}
 
 	public Environment findAmbient(String description) {
-		for (Environment ambient : this.ambients) {
+		for (Environment ambient : this.environments) {
 			if (ambient.getDescription().equals(description)) {
 				return ambient;
 			}
@@ -182,7 +182,7 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 	}
 
 	public Environment findAmbientByType(String type) {
-		for (Environment ambient : this.ambients) {
+		for (Environment ambient : this.environments) {
 			if (ambient.getType().equals(type))
 				return ambient;
 		}
@@ -336,9 +336,9 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 	public boolean matchRequisition(Graph graph) {
 		Map<String, Set<Resource>> mappedFunctions = new HashMap<String, Set<Resource>>();
 		Boolean match = true;
-		if (this.ambients.size() == 0)
+		if (this.environments.size() == 0)
 			match = false;
-		Iterator<Environment> ambIt = this.ambients.iterator();
+		Iterator<Environment> ambIt = this.environments.iterator();
 		while (ambIt.hasNext()) {
 			Environment ambient = ambIt.next();
 			if (ambient.getType().equals(graph.getType()) && !ambient.isBusy()
