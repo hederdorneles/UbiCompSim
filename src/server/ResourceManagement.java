@@ -122,7 +122,6 @@ public class ResourceManagement implements UDIDataReaderListener<ApplicationObje
 			System.out.println("--------------------------------------------------");
 			if (amb != null) {
 				amb.printDeviceList();
-				// this.proccessCPSGraph();
 			}
 			System.out.println("--------------------------------------------------");
 			System.out.println(" ");
